@@ -29,7 +29,7 @@ Cada entrada resume un paso: qué se hizo, qué se aprendió y en qué commit qu
 - `process.env` siempre devuelve texto, por eso los números se convierten con `Number(...)`.
 - Un valor por defecto en un secreto es un riesgo: ver D2.
 
-**Commit:** `chore: inicializar proyecto con Express, configuración centralizada y variables de seguridad` (hash: **\_\_**)
+**Commit:** `chore: inicializar proyecto con Express, configuración centralizada y variables de seguridad` (hash: f104480)
 
 ## Paso 2 — Base común: errores y validación
 
@@ -50,8 +50,8 @@ Cada entrada resume un paso: qué se hizo, qué se aprendió y en qué commit qu
 **Decisiones:** D1, D2.
 **Commits:**
 
-- `feat: agregar AppError, errorHandler, notFound, logger y validación con Zod` (hash: **\_\_**)
-- `docs: agregar diseño, decisiones, bitácora y especificación de la base común` (hash: **\_\_**)
+- `feat: agregar AppError, errorHandler, notFound, logger y validación con Zod` (hash: a6c2863)
+- `docs: agregar diseño, decisiones, bitácora y especificación de la base común` (hash: 7f199a7)
 
 ## Paso 3 — Usuarios en memoria
 
@@ -81,5 +81,5 @@ Cada entrada resume un paso: qué se hizo, qué se aprendió y en qué commit qu
 **Decisiones:** D3, D4.
 **Commits:**
 
-- `feat: agregar CRUD de usuarios en memoria con contraseña hasheada` (hash: **\_\_**)
-- `docs: agregar especificación de usuarios y actualizar bitácora` (hash: **\_\_**)
+- `feat: agregar CRUD de usuarios en memoria con contraseña hasheada` (hash: aa264c9)
+- `docs: agregar especificación de usuarios y actualizar bitácora` (hash:27bbf6d)
