@@ -3,6 +3,7 @@ import { PORT } from "./config/config.js";
 import logger from "./middlewares/logger.js";
 import notFound from "./middlewares/notFound.js";
 import errorHandler from "./middlewares/errorHandler.js";
+import buildContainer from "./container/container.js";
 
 async function startServer() {
   const app = express();
@@ -10,7 +11,13 @@ async function startServer() {
   app.use(logger);
   app.use(express.json());
 
-  // Acá se montará el router del contenedor (Paso 3 en adelante)
+  // El contenedor arma todas las dependencias y devuelve el router principal
+  try {
+    app.use(await buildContainer());
+  } catch (err) {
+    console.error("Error al inicializar el contenedor:", err);
+    process.exit(1);
+  }
 
   app.use(notFound);
   app.use(errorHandler);

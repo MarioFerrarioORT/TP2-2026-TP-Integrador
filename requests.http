@@ -1,0 +1,44 @@
+### 1. Crear usuario (201) — el rol del body se ignora
+POST http://localhost:8000/users
+Content-Type: application/json
+
+{ "nombre": "Ana Pérez", "email": "ANA@mail.com", "password": "clave12345", "rol": "admin" }
+
+### 2. Mismo email (409 EMAIL_DUPLICATED)
+POST http://localhost:8000/users
+Content-Type: application/json
+
+{ "nombre": "Ana 2", "email": "ana@mail.com", "password": "clave12345" }
+
+### 3. Body inválido (400, con 3 errores en details)
+POST http://localhost:8000/users
+Content-Type: application/json
+
+{ "nombre": "A", "email": "no-es-email", "password": "123" }
+
+### 4. Listar (200)
+GET http://localhost:8000/users
+
+### 5. Obtener uno (200)
+GET http://localhost:8000/users/1
+
+### 6. Inexistente (404 USER_NOT_FOUND)
+GET http://localhost:8000/users/99
+
+### 7. ID inválido (400)
+GET http://localhost:8000/users/abc
+
+### 8. Actualizar nombre (200)
+PUT http://localhost:8000/users/1
+Content-Type: application/json
+
+{ "nombre": "Ana María" }
+
+### 9. Actualizar con body vacío (400)
+PUT http://localhost:8000/users/1
+Content-Type: application/json
+
+{}
+
+### 10. Eliminar (204)
+DELETE http://localhost:8000/users/1
