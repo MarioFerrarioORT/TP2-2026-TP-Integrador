@@ -83,3 +83,24 @@ Cada entrada resume un paso: qué se hizo, qué se aprendió y en qué commit qu
 
 - `feat: agregar CRUD de usuarios en memoria con contraseña hasheada` (hash: aa264c9)
 - `docs: agregar especificación de usuarios y actualizar bitácora` (hash:27bbf6d)
+
+## Paso 4 — Autenticación y administrador
+
+**Qué se hizo**
+
+- Servicio de tokens (JWT, HS256) y middlewares `authenticate` (401) y `authorize` (403).
+- Casos de uso `registerUser`, `loginUser` y `seedAdmin`; endpoints `/auth/register`, `/auth/login` y `/auth/me`.
+- Todo `/users` pasa a ser solo para admin; se agregó `PATCH /users/:id/rol`.
+- Reglas: nadie puede borrarse ni cambiarse el rol a sí mismo.
+- Variables obligatorias nuevas: `ADMIN_EMAIL` y `ADMIN_PASSWORD`.
+- Especificación en `docs/specs/02-auth.md`.
+
+**Qué se aprendió**
+
+- Autenticación (401) y autorización (403) son pasos distintos y en ese orden.
+- Un JWT se puede leer pero no alterar; el algoritmo se fija para evitar `alg: none`.
+- Los casos de uso reciben al `actor` como dato plano y no dependen de Express.
+- La seguridad se agregó sin tocar los otros recursos: solo cambió el contenedor.
+
+**Decisiones:** D5, D6.
+**Commits:** (completar hashes)

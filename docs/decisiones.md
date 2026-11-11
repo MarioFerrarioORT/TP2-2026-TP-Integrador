@@ -30,3 +30,13 @@
 - El admin no edita ni borra proyectos ni tareas ajenos.
 - Los usuarios comunes agregan colaboradores por email, así no necesitan listar a todos los usuarios.
   **Consecuencia:** se practican los dos tipos de permisos, por rol y por pertenencia al proyecto. Las reglas de baja con proyectos y tareas se implementan en el Paso 6, cuando esas entidades existan.
+
+## D5 — Autenticación con JWT en el header Bearer
+
+**Decisión:** el login devuelve un token en el body y el cliente lo envía en `Authorization: Bearer <token>`. El token contiene solo `sub` (id) y `rol`, y vence según `JWT_EXPIRES_IN`.
+**Consecuencia:** el rol del token se fija al emitirlo. Si un admin cambia el rol de alguien, o elimina a un usuario, el token anterior sigue siendo válido hasta que venza. Evitarlo requeriría consultar la base en cada petición, a costa de perder el carácter "sin estado" de JWT.
+
+## D6 — Un solo error para credenciales inválidas
+
+**Decisión:** si el email no existe o la contraseña no coincide, se responde el mismo 401 `INVALID_CREDENTIALS`.
+**Consecuencia:** no se puede descubrir qué emails están registrados probando el login.
