@@ -1,11 +1,19 @@
 import AppError from "../../errors/AppError.js";
 
 /**
- * Caso de uso: eliminar un usuario.
- * Regla: debe existir.
- * (Más adelante se agregan las reglas "no tener proyectos ni tareas" y "no borrarse a sí mismo".)
+ * Caso de uso: eliminar un usuario (lo permite solo el admin, desde el router).
+ * Reglas: el usuario debe existir y nadie puede borrarse a sí mismo.
+ * (Más adelante se agrega: no se puede borrar un usuario con proyectos o tareas asignadas.)
  */
-async function deleteUser(id, dao) {
+async function deleteUser(id, actor, dao) {
+  if (actor.id === id) {
+    throw new AppError(
+      "CANNOT_DELETE_SELF",
+      "No podés eliminar tu propio usuario",
+      409
+    );
+  }
+
   const user = await dao.getById(id);
   if (!user) {
     throw new AppError(

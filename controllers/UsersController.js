@@ -31,9 +31,16 @@ class UsersController {
     res.json(await this.#useCases.updateUser(req.params.id, req.body));
   };
 
+  // PATCH /users/:id/rol
+  updateRole = async (req, res) => {
+    res.json(
+      await this.#useCases.updateUserRole(req.params.id, req.body.rol, req.user)
+    );
+  };
+
   // DELETE /users/:id
   remove = async (req, res) => {
-    await this.#useCases.deleteUser(req.params.id);
+    await this.#useCases.deleteUser(req.params.id, req.user);
     res.status(204).send();
   };
 }

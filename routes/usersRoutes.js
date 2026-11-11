@@ -6,16 +6,21 @@ import validate, {
 import {
   createUserSchema,
   updateUserSchema,
+  updateRoleSchema,
   queryUsersSchema,
   userIdParamSchema,
 } from "../schemas/userSchema.js";
 
 /**
  * Factory de router de Usuarios.
- * Recibe el controlador ya armado y define qué ruta valida qué y llama a qué método.
+ * Recibe el controlador ya armado y los middlewares de seguridad.
+ * Todo /users es solo para administradores.
  */
-function createUsersRouter(controller) {
+function createUsersRouter(controller, auth) {
   const router = express.Router();
+
+  // Se aplica a TODAS las rutas de este router: primero autenticar, después autorizar
+  router.use(auth.authenticate, auth.authorize("admin"));
 
   router.get("/", validateQuery(queryUsersSchema), controller.list);
   router.get("/:id", validateParams(userIdParamSchema), controller.get);
@@ -25,6 +30,12 @@ function createUsersRouter(controller) {
     validateParams(userIdParamSchema),
     validate(updateUserSchema),
     controller.update
+  );
+  router.patch(
+    "/:id/rol",
+    validateParams(userIdParamSchema),
+    validate(updateRoleSchema),
+    controller.updateRole
   );
   router.delete("/:id", validateParams(userIdParamSchema), controller.remove);
 

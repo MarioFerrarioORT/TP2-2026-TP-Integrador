@@ -52,6 +52,13 @@ const queryUsersSchema = z.object({
     .optional(),
 });
 
+// PATCH /users/:id/rol
+const updateRoleSchema = z.object({
+  rol: z.enum(["usuario", "admin"], {
+    error: "El rol debe ser 'usuario' o 'admin'",
+  }),
+});
+
 // /users/:id
 const userIdParamSchema = z.object({
   id: z.coerce
@@ -61,8 +68,10 @@ const userIdParamSchema = z.object({
 });
 
 export {
+  fields,
   createUserSchema,
   updateUserSchema,
+  updateRoleSchema,
   queryUsersSchema,
   userIdParamSchema,
 };

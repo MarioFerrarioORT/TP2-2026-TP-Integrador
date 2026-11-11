@@ -42,3 +42,71 @@ Content-Type: application/json
 
 ### 10. Eliminar (204)
 DELETE http://localhost:8000/users/1
+
+### 11. Login admin (200) — guarda el token
+# @name loginAdmin
+POST http://localhost:8000/auth/login
+Content-Type: application/json
+
+{ "email": "admin@gestor.com", "password": "TU_ADMIN_PASSWORD" }
+
+###
+@adminToken = {{loginAdmin.response.body.$.token}}
+
+### 12. Login con contraseña incorrecta (401 INVALID_CREDENTIALS)
+POST http://localhost:8000/auth/login
+Content-Type: application/json
+
+{ "email": "admin@gestor.com", "password": "incorrecta" }
+
+### 13. Login con email inexistente (401, el MISMO error)
+POST http://localhost:8000/auth/login
+Content-Type: application/json
+
+{ "email": "nadie@gestor.com", "password": "incorrecta" }
+
+### 14. Registro público (201) — el rol sale "usuario" aunque mandes "admin"
+POST http://localhost:8000/auth/register
+Content-Type: application/json
+
+{ "nombre": "Ana", "email": "ana@mail.com", "password": "clave12345", "rol": "admin" }
+
+### 15. Login de Ana — guarda su token
+# @name loginAna
+POST http://localhost:8000/auth/login
+Content-Type: application/json
+
+{ "email": "ana@mail.com", "password": "clave12345" }
+
+###
+@anaToken = {{loginAna.response.body.$.token}}
+
+### 16. Mi perfil sin token (401 TOKEN_MISSING)
+GET http://localhost:8000/auth/me
+
+### 17. Mi perfil con token (200)
+GET http://localhost:8000/auth/me
+Authorization: Bearer {{anaToken}}
+
+### 18. Token alterado (401 TOKEN_INVALID): cambiá una letra del token
+GET http://localhost:8000/auth/me
+Authorization: Bearer {{anaToken}}x
+
+### 19. Usuario común pide /users (403 FORBIDDEN)
+GET http://localhost:8000/users
+Authorization: Bearer {{anaToken}}
+
+### 20. Admin pide /users (200)
+GET http://localhost:8000/users
+Authorization: Bearer {{adminToken}}
+
+### 21. Admin se borra a sí mismo (409 CANNOT_DELETE_SELF)
+DELETE http://localhost:8000/users/1
+Authorization: Bearer {{adminToken}}
+
+### 22. Admin cambia el rol de Ana (200)
+PATCH http://localhost:8000/users/2/rol
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "rol": "admin" }
