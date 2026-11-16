@@ -1,6 +1,12 @@
 const PORT = Number(process.env.PORT) || 8000;
 const NODE_ENV = process.env.NODE_ENV || "development";
 const PERSISTENCE_TYPE = process.env.PERSISTENCE_TYPE || "memory"; // "memory" o "sequelize"
+if (!["memory", "sequelize"].includes(PERSISTENCE_TYPE)) {
+  throw new Error(
+    `PERSISTENCE_TYPE inválido: "${PERSISTENCE_TYPE}". Usá "memory" o "sequelize"`
+  );
+}
+const SQLITE_STORAGE = process.env.SQLITE_STORAGE || "database.sqlite"; // archivo de la base (solo modo sequelize)
 const NOTIFIER_TYPE = process.env.NOTIFIER_TYPE || "console"; // "console" o "file"
 
 // Variable obligatoria: si falta, la aplicación no arranca y avisa cuál es.
@@ -27,6 +33,7 @@ export {
   PORT,
   NODE_ENV,
   PERSISTENCE_TYPE,
+  SQLITE_STORAGE,
   NOTIFIER_TYPE,
   JWT_SECRET,
   JWT_EXPIRES_IN,
