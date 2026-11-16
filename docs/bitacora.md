@@ -104,3 +104,24 @@ Cada entrada resume un paso: qué se hizo, qué se aprendió y en qué commit qu
 
 **Decisiones:** D5, D6.
 **Commits:** (completar hashes)
+
+## Paso 5 — Persistencia con Sequelize (usuarios)
+
+**Qué se hizo**
+
+- Conexión a SQLite (`connection/`), modelo `UserModel` y punto central de modelos (`dao/models/`).
+- `UsersSequelizeDao` con la misma interfaz que `UsersMemoryDao`, sin devolver nunca `passwordHash` salvo en `getCredentialsByEmail`.
+- La fábrica de DAOs elige según `PERSISTENCE_TYPE`, que ahora se valida al arrancar.
+- Se comprobó que las mismas 28 peticiones dan respuestas idénticas en los dos modos y que los datos persisten tras un reinicio.
+- Especificación en `docs/specs/03-persistencia-sequelize.md`.
+
+**Qué se aprendió**
+
+- Un ORM traduce entre clases/objetos y tablas/filas; el modelo describe la tabla y `sync()` la crea.
+- `attributes` evita el `SELECT *` que filtraría el hash; `raw` y `.get({ plain: true })` devuelven objetos planos.
+- Actualizar con el `update` estático evita que el hash entre en el objeto devuelto.
+- `sync()` no modifica tablas existentes: en desarrollo se borra `database.sqlite`.
+- No hubo que tocar casos de uso, controladores, rutas ni contenedor: así funciona la inversión de dependencias.
+
+**Decisiones:** D7, D8.
+**Commits:** (completar hashes)

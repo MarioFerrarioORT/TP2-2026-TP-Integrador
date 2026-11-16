@@ -40,3 +40,13 @@
 
 **Decisión:** si el email no existe o la contraseña no coincide, se responde el mismo 401 `INVALID_CREDENTIALS`.
 **Consecuencia:** no se puede descubrir qué emails están registrados probando el login.
+
+## D7 — Persistencia seleccionable por variable de entorno
+
+**Decisión:** la fábrica `daoFactory.js` elige entre el DAO en memoria y el de Sequelize según `PERSISTENCE_TYPE`; un valor inválido impide arrancar.
+**Consecuencia:** cambiar de persistencia es modificar una línea del `.env`. Casos de uso, controladores, rutas y contenedor no cambian, porque los DAO comparten interfaz y devuelven objetos planos.
+
+## D8 — `sync()` en lugar de migraciones
+
+**Decisión:** las tablas se crean con `sequelize.sync()` al arrancar.
+**Consecuencia:** `sync()` no altera tablas existentes, así que en desarrollo se borra `database.sqlite` cuando cambia un modelo. Es una simplificación aceptable para este trabajo; en producción se usarían migraciones.
