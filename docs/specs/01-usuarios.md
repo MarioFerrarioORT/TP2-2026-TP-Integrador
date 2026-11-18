@@ -20,7 +20,8 @@ CRUD de usuarios con contraseña hasheada, sobre el patrón completo de capas.
 - La contraseña tiene entre 8 y 72 caracteres y se guarda solo como hash.
 - Ninguna respuesta incluye la contraseña ni su hash.
 - El rol por defecto es "usuario" y no se acepta desde el body.
-- Pendiente (Pasos 4 y 6): protección por rol y reglas de baja con proyectos y tareas.
+- Baja: no se elimina a un dueño de proyectos (Paso 6)
+- Pendiente (Paso 7): no se elimina tampoco con tareas asignadas.
 
 ## Criterios de aceptación
 

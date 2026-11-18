@@ -50,3 +50,18 @@
 
 **Decisión:** las tablas se crean con `sequelize.sync()` al arrancar.
 **Consecuencia:** `sync()` no altera tablas existentes, así que en desarrollo se borra `database.sqlite` cuando cambia un modelo. Es una simplificación aceptable para este trabajo; en producción se usarían migraciones.
+
+## D9 — Permisos de proyectos por pertenencia, no por rol
+
+**Decisión:** el dueño modifica, elimina y gestiona colaboradores; dueño y colaboradores ven el proyecto. Se verifica dentro de los casos de uso con el actor del token. Un admin no tiene acceso especial a proyectos ajenos.
+**Consecuencia:** `authorize("admin")` no alcanza, porque el permiso depende del proyecto concreto. Se responde 403 (y no 404) cuando el proyecto existe pero no participás.
+
+## D10 — Relaciones con garantías en la base de datos
+
+**Decisión:** dueño (1 a N) con `ON DELETE RESTRICT` y colaboradores (N a N) con tabla intermedia de clave primaria compuesta (projectId, userId). Las reglas también se validan en el caso de uso.
+**Consecuencia:** el caso de uso da el mensaje claro (409) y la base garantiza la integridad aunque dos pedidos lleguen a la vez.
+
+## D11 — Fechas como día y reloj inyectable
+
+**Decisión:** las fechas son `AAAA-MM-DD` (DATEONLY) y los casos de uso obtienen "hoy" de un `clock` inyectado, nunca de `new Date()`. `fechaFin ≥ fechaCreacion` se valida en el caso de uso porque necesita el reloj o el proyecto guardado.
+**Consecuencia:** se puede probar con `CLOCK_NOW` y la zona horaria no corre las fechas de calendario.
