@@ -5,11 +5,13 @@ import {
   JWT_EXPIRES_IN,
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
+  CLOCK_NOW,
 } from "../config/config.js";
+import createClock from "../utils/clock.js";
 import createPasswordHasher from "../security/passwordHasher.js";
 import createTokenService from "../security/tokenService.js";
 import createAuthMiddlewares from "../middlewares/auth.js";
-import { getUsersDao } from "../dao/daoFactory.js";
+import { getUsersDao, getProjectsDao } from "../dao/daoFactory.js";
 import makeUserUseCases from "../usecases/users/makeUserUseCases.js";
 import UsersController from "../controllers/UsersController.js";
 import createUsersRouter from "../routes/usersRoutes.js";
@@ -17,6 +19,9 @@ import makeAuthUseCases from "../usecases/auth/makeAuthUseCases.js";
 import seedAdmin from "../usecases/auth/seedAdmin.js";
 import AuthController from "../controllers/AuthController.js";
 import createAuthRouter from "../routes/authRoutes.js";
+import makeProjectUseCases from "../usecases/projects/makeProjectUseCases.js";
+import ProjectsController from "../controllers/ProjectsController.js";
+import createProjectsRouter from "../routes/projectsRoutes.js";
 
 /**
  * Composition Root: el único lugar donde se crean y conectan las piezas.
@@ -37,6 +42,16 @@ async function buildContainer() {
     await usersDao.init();
   }
 
+  const projectsDao = getProjectsDao();
+  if (typeof projectsDao.init === "function") {
+    await projectsDao.init();
+  }
+
+  // Reloj: hora real, o fija si CLOCK_NOW está definida (para probar a mano)
+  const clock = createClock({ fixedNow: CLOCK_NOW });
+  if (CLOCK_NOW)
+    console.log(`[Reloj] Fijo en ${CLOCK_NOW} (hoy = ${clock.today()})`);
+
   // 3. Administrador inicial: va DESPUÉS de inicializar los DAOs (la tabla ya tiene que existir)
   await seedAdmin(
     { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
@@ -46,16 +61,20 @@ async function buildContainer() {
 
   // 4. Casos de uso -> controladores
   const usersController = new UsersController(
-    makeUserUseCases(usersDao, hasher)
+    makeUserUseCases(usersDao, hasher, projectsDao)
   );
   const authController = new AuthController(
     makeAuthUseCases({ usersDao, hasher, tokens })
+  );
+  const projectsController = new ProjectsController(
+    makeProjectUseCases({ projectsDao, usersDao, clock })
   );
 
   // 5. Routers
   const router = Router();
   router.use("/auth", createAuthRouter(authController, auth));
   router.use("/users", createUsersRouter(usersController, auth));
+  router.use("/projects", createProjectsRouter(projectsController, auth));
 
   return router;
 }

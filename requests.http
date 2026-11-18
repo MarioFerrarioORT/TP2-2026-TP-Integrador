@@ -43,12 +43,14 @@ Content-Type: application/json
 ### 10. Eliminar (204)
 DELETE http://localhost:8000/users/1
 
+####################################################################################################
+
 ### 11. Login admin (200) — guarda el token
 # @name loginAdmin
 POST http://localhost:8000/auth/login
 Content-Type: application/json
 
-{ "email": "admin@gestor.com", "password": "TU_ADMIN_PASSWORD" }
+{ "email": "admin@gestor.com", "password": "passwordsecreto123" }
 
 ###
 @adminToken = {{loginAdmin.response.body.$.token}}
@@ -110,3 +112,121 @@ Content-Type: application/json
 Authorization: Bearer {{adminToken}}
 
 { "rol": "admin" }
+### 23. Registrar a Beto y Carla (201 cada una)
+POST http://localhost:8000/auth/register
+Content-Type: application/json
+
+{ "nombre": "Beto", "email": "beto@mail.com", "password": "clave12345" }
+
+###
+POST http://localhost:8000/auth/register
+Content-Type: application/json
+
+{ "nombre": "Carla", "email": "carla@mail.com", "password": "clave12345" }
+
+### 24. Login de Beto y Carla (guardan su token)
+# @name loginBeto
+POST http://localhost:8000/auth/login
+Content-Type: application/json
+
+{ "email": "beto@mail.com", "password": "clave12345" }
+
+###
+@betoToken = {{loginBeto.response.body.$.token}}
+
+###
+# @name loginCarla
+POST http://localhost:8000/auth/login
+Content-Type: application/json
+
+{ "email": "carla@mail.com", "password": "clave12345" }
+
+###
+@carlaToken = {{loginCarla.response.body.$.token}}
+
+### 25. Ana crea un proyecto (201): ownerId y fechaCreacion salen del servidor
+POST http://localhost:8000/projects
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "titulo": "Sitio web", "descripcion": "Rediseño", "fechaFin": "2026-12-31", "ownerId": 99 }
+
+### 26. Fecha de fin en el pasado (400 INVALID_DATE_RANGE)
+POST http://localhost:8000/projects
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "titulo": "Viejo", "fechaFin": "2020-01-01" }
+
+### 27. Fecha con formato inválido (400 VALIDATION_ERROR)
+POST http://localhost:8000/projects
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "titulo": "Nuevo", "fechaFin": "31/12/2026" }
+
+### 28. Ana agrega a Beto por email (201, aparece en colaboradores)
+POST http://localhost:8000/projects/1/members
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "email": "beto@mail.com" }
+
+### 29. Mismo email otra vez (409 ALREADY_COLLABORATOR)
+POST http://localhost:8000/projects/1/members
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "email": "beto@mail.com" }
+
+### 30. Agregar a la propia dueña (409 OWNER_CANNOT_BE_COLLABORATOR)
+POST http://localhost:8000/projects/1/members
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "email": "ana@mail.com" }
+
+### 31. Beto intenta agregar a Carla (403 NOT_PROJECT_OWNER)
+POST http://localhost:8000/projects/1/members
+Content-Type: application/json
+Authorization: Bearer {{betoToken}}
+
+{ "email": "carla@mail.com" }
+
+### 32. Beto ve el proyecto (200) / Carla no (403 NOT_PROJECT_MEMBER)
+GET http://localhost:8000/projects/1
+Authorization: Bearer {{betoToken}}
+
+###
+GET http://localhost:8000/projects/1
+Authorization: Bearer {{carlaToken}}
+
+### 33. Mis proyectos (200): Beto ve el de Ana porque es colaborador
+GET http://localhost:8000/projects
+Authorization: Bearer {{betoToken}}
+
+### 34. Beto intenta modificar (403) / Ana modifica (200)
+PUT http://localhost:8000/projects/1
+Content-Type: application/json
+Authorization: Bearer {{betoToken}}
+
+{ "titulo": "Hack" }
+
+###
+PUT http://localhost:8000/projects/1
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "titulo": "Sitio web 2.0" }
+
+### 35. Ana quita a Beto (204) y otra vez (404 MEMBER_NOT_FOUND)
+DELETE http://localhost:8000/projects/1/members/3
+Authorization: Bearer {{anaToken}}
+
+### 36. El admin intenta borrar a Ana, dueña (409 USER_HAS_PROJECTS)
+DELETE http://localhost:8000/users/2
+Authorization: Bearer {{adminToken}}
+
+### 37. Ana elimina el proyecto (204)
+DELETE http://localhost:8000/projects/1
+Authorization: Bearer {{anaToken}}

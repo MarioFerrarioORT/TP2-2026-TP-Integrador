@@ -19,7 +19,10 @@ UserModel.init(
       allowNull: false,
       validate: {
         notEmpty: { msg: "El nombre es obligatorio" },
-        len: [2, 50],
+        len: {
+          args: [2, 50],
+          msg: "El nombre debe tener entre 2 y 50 caracteres",
+        },
       },
     },
     email: {

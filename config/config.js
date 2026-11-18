@@ -25,6 +25,9 @@ const JWT_SECRET = required("JWT_SECRET");
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
 const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS) || 10;
 
+// Reloj fijo para probar a mano (ej. 2026-12-01T12:00:00Z). Vacío = hora real.
+const CLOCK_NOW = process.env.CLOCK_NOW || undefined;
+
 // Administrador inicial: se crea al arrancar si no existe.
 const ADMIN_EMAIL = required("ADMIN_EMAIL").trim().toLowerCase();
 const ADMIN_PASSWORD = required("ADMIN_PASSWORD");
@@ -38,6 +41,7 @@ export {
   JWT_SECRET,
   JWT_EXPIRES_IN,
   BCRYPT_ROUNDS,
+  CLOCK_NOW,
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
 };
