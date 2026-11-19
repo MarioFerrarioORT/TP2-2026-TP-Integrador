@@ -343,3 +343,62 @@ Authorization: Bearer {{anaToken}}
 ###
 DELETE http://localhost:8000/projects/{{pid}}
 Authorization: Bearer {{anaToken}}
+
+#########################################################################
+
+### 51. Ana crea un proyecto para probar eventos
+# @name proyecto8
+POST http://localhost:8000/projects
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "titulo": "Proyecto de eventos", "fechaFin": "2026-12-31" }
+
+###
+@pid8 = {{proyecto8.response.body.$.id}}
+
+### 52. Agregar a Beto (201) → consola: "Nuevo colaborador — Beto ... por Ana"
+POST http://localhost:8000/projects/{{pid8}}/members
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "email": "beto@mail.com" }
+
+### 53. Agregarlo otra vez (409) → la consola NO muestra nada
+POST http://localhost:8000/projects/{{pid8}}/members
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "email": "beto@mail.com" }
+
+### 54. Crear tarea para Beto (201) → consola: "Tarea asignada — ... por Ana"
+# @name tarea8
+POST http://localhost:8000/projects/{{pid8}}/tasks
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "titulo": "Preparar entrega", "responsableId": 3 }
+
+###
+@tid8 = {{tarea8.response.body.$.id}}
+
+### 55. Responsable que no participa (409) → la consola NO muestra nada
+POST http://localhost:8000/projects/{{pid8}}/tasks
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "titulo": "Otra", "responsableId": 4 }
+
+### 56. Cambiar solo el estado (200) → NO se notifica
+PUT http://localhost:8000/projects/{{pid8}}/tasks/{{tid8}}
+Content-Type: application/json
+Authorization: Bearer {{betoToken}}
+
+{ "estado": "En proceso" }
+
+### 57. Reasignar a Ana (200) → consola: "Tarea asignada ... a Ana ... por Beto"
+PUT http://localhost:8000/projects/{{pid8}}/tasks/{{tid8}}
+Content-Type: application/json
+Authorization: Bearer {{betoToken}}
+
+{ "responsableId": 2 }

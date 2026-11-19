@@ -7,7 +7,14 @@ if (!["memory", "sequelize"].includes(PERSISTENCE_TYPE)) {
   );
 }
 const SQLITE_STORAGE = process.env.SQLITE_STORAGE || "database.sqlite"; // archivo de la base (solo modo sequelize)
-const NOTIFIER_TYPE = process.env.NOTIFIER_TYPE || "console"; // "console" o "file"
+const NOTIFIER_TYPE = process.env.NOTIFIER_TYPE || "console"; // "console", "file" o "both" (consola y archivo)
+if (!["console", "file", "both"].includes(NOTIFIER_TYPE)) {
+  throw new Error(
+    `NOTIFIER_TYPE inválido: "${NOTIFIER_TYPE}". Usá "console", "file" o "both"`
+  );
+}
+const NOTIFICATIONS_LOG_PATH =
+  process.env.NOTIFICATIONS_LOG_PATH || "notifications.log"; // archivo del notificador "file"
 
 // Variable obligatoria: si falta, la aplicación no arranca y avisa cuál es.
 function required(name) {
@@ -44,4 +51,5 @@ export {
   CLOCK_NOW,
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
+  NOTIFICATIONS_LOG_PATH,
 };

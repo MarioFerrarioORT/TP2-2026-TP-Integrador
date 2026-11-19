@@ -1,6 +1,7 @@
 import AppError from "../../errors/AppError.js";
 import { assertOwner } from "./projectAccess.js";
 import presentProject from "./presentProject.js";
+import EVENTS from "../../events/eventNames.js";
 
 /**
  * Caso de uso: agregar un colaborador al proyecto, indicándolo por email.
@@ -8,8 +9,16 @@ import presentProject from "./presentProject.js";
  * el usuario debe existir (404), no puede ser el dueño (409) ni estar ya agregado (409).
  * La tabla intermedia tiene clave única (projectId, userId): aunque dos pedidos lleguen a la vez,
  * la base impide el duplicado. El chequeo de acá da el mensaje claro.
+ * Efecto secundario desacoplado: al agregarlo, emite "project.memberAdded".
  */
-async function addMember(projectId, { email }, actor, projectsDao, usersDao) {
+async function addMember(
+  projectId,
+  { email },
+  actor,
+  projectsDao,
+  usersDao,
+  events
+) {
   const project = await projectsDao.getById(projectId);
   if (!project) {
     throw new AppError(
@@ -47,7 +56,20 @@ async function addMember(projectId, { email }, actor, projectsDao, usersDao) {
     );
   }
 
-  return presentProject(await projectsDao.getById(projectId), usersDao);
+  const presented = await presentProject(
+    await projectsDao.getById(projectId),
+    usersDao
+  );
+
+  const owner = await usersDao.getById(actor.id);
+  events.emit(EVENTS.PROJECT_MEMBER_ADDED, {
+    projectId: project.id,
+    proyecto: project.titulo,
+    colaborador: { id: user.id, nombre: user.nombre, email: user.email },
+    agregadoPor: owner ? owner.nombre : "un usuario",
+  });
+
+  return presented;
 }
 
 export default addMember;

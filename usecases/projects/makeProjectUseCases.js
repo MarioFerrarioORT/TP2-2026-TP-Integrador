@@ -11,7 +11,13 @@ import removeMember from "./removeMember.js";
  * Recibe las dependencias (DAOs y reloj) y las "engancha" en cada caso de uso.
  * "actor" es quien hace la petición ({ id, rol }), tomado del token.
  */
-function makeProjectUseCases({ projectsDao, usersDao, tasksDao, clock }) {
+function makeProjectUseCases({
+  projectsDao,
+  usersDao,
+  tasksDao,
+  clock,
+  events,
+}) {
   return {
     getProjects: (filters, actor) =>
       getProjects(filters, actor, projectsDao, usersDao),
@@ -24,7 +30,7 @@ function makeProjectUseCases({ projectsDao, usersDao, tasksDao, clock }) {
     deleteProject: (id, actor) =>
       deleteProject(id, actor, projectsDao, tasksDao),
     addMember: (projectId, data, actor) =>
-      addMember(projectId, data, actor, projectsDao, usersDao),
+      addMember(projectId, data, actor, projectsDao, usersDao, events),
     removeMember: (projectId, userId, actor) =>
       removeMember(projectId, userId, actor, projectsDao, tasksDao),
   };

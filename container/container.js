@@ -25,6 +25,9 @@ import createProjectsRouter from "../routes/projectsRoutes.js";
 import makeTaskUseCases from "../usecases/tasks/makeTaskUseCases.js";
 import TasksController from "../controllers/TasksController.js";
 import createTasksRouter from "../routes/tasksRoutes.js";
+import createEventBus from "../events/eventBus.js";
+import { getNotifier } from "../notifications/notifierFactory.js";
+import registerAlertListeners from "../alerts/registerAlertListeners.js";
 
 /**
  * Composition Root: el único lugar donde se crean y conectan las piezas.
@@ -60,6 +63,11 @@ async function buildContainer() {
   if (CLOCK_NOW)
     console.log(`[Reloj] Fijo en ${CLOCK_NOW} (hoy = ${clock.today()})`);
 
+  // Eventos: el bus conecta a quien emite (casos de uso) con quien escucha (alertas).
+  // El notificador (consola, archivo...) se elige acá; ni los casos de uso ni el listener lo conocen.
+  const events = createEventBus();
+  registerAlertListeners(events, getNotifier());
+
   // 3. Administrador inicial: va DESPUÉS de inicializar los DAOs (la tabla ya tiene que existir)
   await seedAdmin(
     { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
@@ -75,10 +83,10 @@ async function buildContainer() {
     makeAuthUseCases({ usersDao, hasher, tokens })
   );
   const projectsController = new ProjectsController(
-    makeProjectUseCases({ projectsDao, usersDao, tasksDao, clock })
+    makeProjectUseCases({ projectsDao, usersDao, tasksDao, clock, events })
   );
   const tasksController = new TasksController(
-    makeTaskUseCases({ projectsDao, tasksDao, usersDao })
+    makeTaskUseCases({ projectsDao, tasksDao, usersDao, events })
   );
 
   // 5. Routers
