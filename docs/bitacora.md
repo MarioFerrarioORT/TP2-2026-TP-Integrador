@@ -163,3 +163,22 @@ Cada entrada resume un paso: qué se hizo, qué se aprendió y en qué commit qu
 
 **Decisiones:** D12, D13.
 **Commits:** (completar hashes)
+
+## Paso 8 — Eventos y notificador
+
+**Qué se hizo**
+
+- Bus de eventos (EventEmitter) inyectado desde el contenedor; eventos `task.assigned` y `project.memberAdded`.
+- Listener en `alerts/` que arma el mensaje y captura sus errores; notificadores de consola y archivo, combinables (`both`).
+- `task.assigned` se emite al crear una tarea o al reasignarla a otra persona; no al cambiar el estado o el título.
+- Probado en memoria y Sequelize, con los tres notificadores y con un notificador roto. Especificación en `docs/specs/06-eventos.md`.
+
+**Qué se aprendió**
+
+- `EventEmitter`: `emit` y `on`; quien emite no conoce a quien escucha.
+- Un listener `async` tiene que atrapar sus errores; si no, una promesa rechazada puede tumbar el proceso.
+- `Promise.allSettled` para ejecutar varias cosas aunque alguna falle.
+- Emitir el evento después de guardar: cuenta algo que ya ocurrió.
+
+**Decisiones:** D14, D15.
+**Commits:** (completar hashes)

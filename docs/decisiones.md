@@ -75,3 +75,13 @@
 
 **Decisión:** no se elimina un proyecto con tareas, no se quita a un colaborador con tareas en ese proyecto y no se elimina a un usuario con tareas asignadas (409 en los tres casos). La base lo refuerza con `ON DELETE RESTRICT` en `tasks.projectId` y `tasks.responsableId`.
 **Consecuencia:** el caso de uso da el mensaje claro y la base garantiza la integridad. El estado se valida en Zod y en el modelo, no con un CHECK en SQLite.
+
+## D14 — Eventos de dominio con listener y notificador desacoplados
+
+**Decisión:** los casos de uso emiten `task.assigned` y `project.memberAdded` en un bus (EventEmitter) creado e inyectado desde el contenedor, y solo después de guardar con éxito. El listener vive en `alerts/` y se comunica con un notificador de contrato `notify({ subject, body })`, elegido por `NOTIFIER_TYPE` (console, file, both).
+**Consecuencia:** cambiar el canal de aviso no toca las reglas de negocio. El listener captura sus errores: un fallo de notificación no tumba la operación.
+
+## D15 — Sin notificaciones guardadas
+
+**Decisión:** no se implementan notificaciones persistentes con estado visto/no visto. Quedaron fuera del alcance por tiempo.
+**Consecuencia:** sumarlas más adelante sería un listener más sobre los mismos eventos, sin cambiar los casos de uso.
