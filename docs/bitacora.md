@@ -1,17 +1,5 @@
 # Bitácora
 
-## Paso 1 — Setup
-
-- Proyecto Express con ES Modules, configuración centralizada y variables de seguridad.
-- JWT_SECRET sin valor por defecto: la app no arranca si falta.
-
-## Paso 2 — Base común
-
-- AppError, logger, notFound, errorHandler y validate (Zod).
-- Aprendí: los errores se responden en un solo lugar; en Express 5 los errores de funciones async llegan solos al errorHandler.
-
-# Bitácora
-
 Cada entrada resume un paso: qué se hizo, qué se aprendió y en qué commit quedó.
 
 ## Paso 1 — Setup del proyecto
@@ -103,7 +91,10 @@ Cada entrada resume un paso: qué se hizo, qué se aprendió y en qué commit qu
 - La seguridad se agregó sin tocar los otros recursos: solo cambió el contenedor.
 
 **Decisiones:** D5, D6.
-**Commits:** (completar hashes)
+**Commits:**
+
+- `feat: agregar login y registro con JWT, administrador inicial y protección de usuarios por rol` (hash: 9ca5d12)
+- `docs: agregar especificación de autenticación, decisiones D5 y D6 y bitácora del paso 4` (hash: f7b731a)
 
 ## Paso 5 — Persistencia con Sequelize (usuarios)
 
@@ -124,4 +115,51 @@ Cada entrada resume un paso: qué se hizo, qué se aprendió y en qué commit qu
 - No hubo que tocar casos de uso, controladores, rutas ni contenedor: así funciona la inversión de dependencias.
 
 **Decisiones:** D7, D8.
+**Commits:**
+
+- `feat: agregar persistencia con Sequelize y SQLite` (hash: 0402ca7)
+- `docs: agregar especificación de persistencia, decisiones D7 y D8 y bitácora del paso 5` (hash: b470a7f)
+
+## Paso 6 — Proyectos y colaboradores
+
+**Qué se hizo**
+
+- Entidad Proyecto con dueño (1 a N) y colaboradores (N a N con tabla intermedia), en memoria y con Sequelize.
+- Asociaciones centralizadas en `dao/models/index.js`; borrado de proyecto con transacción.
+- Permisos por pertenencia en los casos de uso (dueño y colaborador); colaboradores agregados por email.
+- Reloj inyectable (`utils/clock.js`, `CLOCK_NOW`) y regla de fechas.
+- `deleteUser` rechaza a dueños de proyectos y limpia las participaciones como colaborador.
+- 54 peticiones idénticas en los dos modos. Especificación en `docs/specs/04-proyectos.md`.
+
+**Qué se aprendió**
+
+- Asociaciones: `hasMany` + `belongsTo` (1 a N) y `belongsToMany` con `through` (N a N); `include` equivale a un JOIN.
+- Una transacción agrupa operaciones: todas o ninguna.
+- Un permiso que depende del dato concreto va en el caso de uso, no en `authorize`.
+- Qué validación va en Zod (solo el pedido) y cuál en el caso de uso (necesita otros datos).
+- `sync()` agrega tablas nuevas sin tocar las existentes.
+
+**Decisiones:** D9, D10, D11.
+**Commits:**
+
+- `feat: agregar proyectos con colaboradores (N a N), permisos por pertenencia y reloj inyectable` (hash: 4adf81f)
+- `docs:agregar especificación de proyectos, decisiones D9 a D11 y bitácora del paso 6` (hash: b6f5b14)
+
+## Paso 7 — Tareas
+
+**Qué se hizo**
+
+- Entidad Tarea (título, descripción, estado, proyecto, responsable) en memoria y con Sequelize, anidada en `/projects/:id/tasks`.
+- Regla central: el responsable debe ser el dueño o un colaborador del proyecto.
+- Reglas de baja pendientes: proyecto, colaborador y usuario con tareas (409), con RESTRICT en la base.
+- 73 peticiones idénticas en los dos modos. Especificación en `docs/specs/05-tareas.md`.
+
+**Qué se aprendió**
+
+- `mergeParams` para ver parámetros de la ruta donde se monta un router.
+- Dos relaciones 1 a N desde un mismo modelo (proyecto y usuario) con `as` distintos.
+- `validate: { isIn }` en el modelo, y `raw: true` para devolver objetos planos.
+- Pasar las dependencias a los casos de uso como un objeto.
+
+**Decisiones:** D12, D13.
 **Commits:** (completar hashes)

@@ -15,7 +15,7 @@ Proyectos con dueño y colaboradores (N a N), con permisos por pertenencia y per
 - Un admin no tiene acceso especial a proyectos ajenos; sigue las mismas reglas que cualquier usuario.
 - No se puede eliminar a un usuario que es dueño de proyectos (409 USER_HAS_PROJECTS).
 - Al eliminar a un usuario colaborador, se quitan sus participaciones.
-- Pendiente (Paso 7): no eliminar proyectos con tareas ni quitar colaboradores con tareas asignadas.
+- No se elimina un proyecto con tareas (409 PROJECT_HAS_TASKS); no se quita a un colaborador con tareas en ese proyecto (409 MEMBER_HAS_TASKS).
 
 ## Criterios de aceptación
 

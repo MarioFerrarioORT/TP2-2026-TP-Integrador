@@ -65,3 +65,13 @@
 
 **Decisión:** las fechas son `AAAA-MM-DD` (DATEONLY) y los casos de uso obtienen "hoy" de un `clock` inyectado, nunca de `new Date()`. `fechaFin ≥ fechaCreacion` se valida en el caso de uso porque necesita el reloj o el proyecto guardado.
 **Consecuencia:** se puede probar con `CLOCK_NOW` y la zona horaria no corre las fechas de calendario.
+
+## D12 — Tareas anidadas en el proyecto, con permisos de participante
+
+**Decisión:** las tareas viven en `/projects/:id/tasks`. Dueño y colaboradores ven, crean y editan tareas (incluido el estado y la reasignación); solo el dueño las elimina. El responsable es obligatorio y debe ser el dueño o un colaborador (409). Una tarea de otro proyecto responde 404.
+**Consecuencia:** el permiso se resuelve con el proyecto de la URL, reutilizando `assertParticipant` y `assertOwner`.
+
+## D13 — Reglas de baja con doble defensa
+
+**Decisión:** no se elimina un proyecto con tareas, no se quita a un colaborador con tareas en ese proyecto y no se elimina a un usuario con tareas asignadas (409 en los tres casos). La base lo refuerza con `ON DELETE RESTRICT` en `tasks.projectId` y `tasks.responsableId`.
+**Consecuencia:** el caso de uso da el mensaje claro y la base garantiza la integridad. El estado se valida en Zod y en el modelo, no con un CHECK en SQLite.
