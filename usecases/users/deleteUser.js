@@ -2,11 +2,11 @@ import AppError from "../../errors/AppError.js";
 
 /**
  * Caso de uso: eliminar un usuario (lo permite solo el admin, desde el router).
- * Reglas: el usuario debe existir y nadie puede borrarse a sí mismo y no se puede eliminar
- * a quien sea dueño de proyectos. Sus participaciones como colaborador se quitan al eliminarlo.
- * (Más adelante se agrega: tampoco si tiene tareas asignadas.)
+ * Reglas: el usuario debe existir, nadie puede borrarse a sí mismo, no se puede eliminar
+ * a quien sea dueño de proyectos ni a quien tenga tareas asignadas.
+ * Sus participaciones como colaborador se quitan al eliminarlo.
  */
-async function deleteUser(id, actor, dao, projectsDao) {
+async function deleteUser(id, actor, dao, projectsDao, tasksDao) {
   if (actor.id === id) {
     throw new AppError(
       "CANNOT_DELETE_SELF",
@@ -29,6 +29,15 @@ async function deleteUser(id, actor, dao, projectsDao) {
     throw new AppError(
       "USER_HAS_PROJECTS",
       "No se puede eliminar a un usuario que es dueño de proyectos",
+      409
+    );
+  }
+
+  const assignedTasks = await tasksDao.getAll({ responsableId: id, limit: 1 });
+  if (assignedTasks.length > 0) {
+    throw new AppError(
+      "USER_HAS_TASKS",
+      "No se puede eliminar a un usuario que tiene tareas asignadas",
       409
     );
   }

@@ -3,6 +3,8 @@ import usersMemoryDao from "./users/UsersMemoryDao.js";
 import usersSequelizeDao from "./users/UsersSequelizeDao.js";
 import projectsMemoryDao from "./projects/ProjectsMemoryDao.js";
 import projectsSequelizeDao from "./projects/ProjectsSequelizeDao.js";
+import tasksMemoryDao from "./tasks/TasksMemoryDao.js";
+import tasksSequelizeDao from "./tasks/TasksSequelizeDao.js";
 
 /**
  * Factory de DAOs: decide qué implementación usa la aplicación según PERSISTENCE_TYPE.
@@ -23,4 +25,8 @@ function getProjectsDao() {
   return useSequelize ? projectsSequelizeDao : projectsMemoryDao;
 }
 
-export { getUsersDao, getProjectsDao };
+function getTasksDao() {
+  return useSequelize ? tasksSequelizeDao : tasksMemoryDao;
+}
+
+export { getUsersDao, getProjectsDao, getTasksDao };

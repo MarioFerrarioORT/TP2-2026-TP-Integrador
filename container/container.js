@@ -11,7 +11,7 @@ import createClock from "../utils/clock.js";
 import createPasswordHasher from "../security/passwordHasher.js";
 import createTokenService from "../security/tokenService.js";
 import createAuthMiddlewares from "../middlewares/auth.js";
-import { getUsersDao, getProjectsDao } from "../dao/daoFactory.js";
+import { getUsersDao, getProjectsDao, getTasksDao } from "../dao/daoFactory.js";
 import makeUserUseCases from "../usecases/users/makeUserUseCases.js";
 import UsersController from "../controllers/UsersController.js";
 import createUsersRouter from "../routes/usersRoutes.js";
@@ -22,6 +22,9 @@ import createAuthRouter from "../routes/authRoutes.js";
 import makeProjectUseCases from "../usecases/projects/makeProjectUseCases.js";
 import ProjectsController from "../controllers/ProjectsController.js";
 import createProjectsRouter from "../routes/projectsRoutes.js";
+import makeTaskUseCases from "../usecases/tasks/makeTaskUseCases.js";
+import TasksController from "../controllers/TasksController.js";
+import createTasksRouter from "../routes/tasksRoutes.js";
 
 /**
  * Composition Root: el único lugar donde se crean y conectan las piezas.
@@ -47,6 +50,11 @@ async function buildContainer() {
     await projectsDao.init();
   }
 
+  const tasksDao = getTasksDao();
+  if (typeof tasksDao.init === "function") {
+    await tasksDao.init();
+  }
+
   // Reloj: hora real, o fija si CLOCK_NOW está definida (para probar a mano)
   const clock = createClock({ fixedNow: CLOCK_NOW });
   if (CLOCK_NOW)
@@ -61,19 +69,23 @@ async function buildContainer() {
 
   // 4. Casos de uso -> controladores
   const usersController = new UsersController(
-    makeUserUseCases(usersDao, hasher, projectsDao)
+    makeUserUseCases(usersDao, hasher, projectsDao, tasksDao)
   );
   const authController = new AuthController(
     makeAuthUseCases({ usersDao, hasher, tokens })
   );
   const projectsController = new ProjectsController(
-    makeProjectUseCases({ projectsDao, usersDao, clock })
+    makeProjectUseCases({ projectsDao, usersDao, tasksDao, clock })
+  );
+  const tasksController = new TasksController(
+    makeTaskUseCases({ projectsDao, tasksDao, usersDao })
   );
 
   // 5. Routers
   const router = Router();
   router.use("/auth", createAuthRouter(authController, auth));
   router.use("/users", createUsersRouter(usersController, auth));
+  router.use("/projects/:id/tasks", createTasksRouter(tasksController, auth));
   router.use("/projects", createProjectsRouter(projectsController, auth));
 
   return router;

@@ -230,3 +230,116 @@ Authorization: Bearer {{adminToken}}
 ### 37. Ana elimina el proyecto (204)
 DELETE http://localhost:8000/projects/1
 Authorization: Bearer {{anaToken}}
+
+############################################################
+
+### 38. Ana crea un proyecto para las pruebas de tareas
+# @name proyecto7
+POST http://localhost:8000/projects
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "titulo": "Proyecto con tareas", "fechaFin": "2026-12-31" }
+
+###
+@pid = {{proyecto7.response.body.$.id}}
+
+### 39. Ana agrega a Beto como colaborador (201)
+POST http://localhost:8000/projects/{{pid}}/members
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "email": "beto@mail.com" }
+
+### 40. Ana crea una tarea para Beto (201, estado "Pendiente" por defecto)
+# @name tarea1
+POST http://localhost:8000/projects/{{pid}}/tasks
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "titulo": "Diseñar la home", "descripcion": "Mockups", "responsableId": 3 }
+
+###
+@tid = {{tarea1.response.body.$.id}}
+
+### 41. Responsable que no participa: Carla (409 RESPONSIBLE_NOT_IN_PROJECT)
+POST http://localhost:8000/projects/{{pid}}/tasks
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "titulo": "Otra tarea", "responsableId": 4 }
+
+### 42. Carla no participa, no puede crear tareas (403 NOT_PROJECT_MEMBER)
+POST http://localhost:8000/projects/{{pid}}/tasks
+Content-Type: application/json
+Authorization: Bearer {{carlaToken}}
+
+{ "titulo": "Intruso", "responsableId": 2 }
+
+### 43. Estado inválido (400) / sin responsable (400)
+POST http://localhost:8000/projects/{{pid}}/tasks
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "titulo": "Algo", "estado": "Hecho", "responsableId": 2 }
+
+###
+POST http://localhost:8000/projects/{{pid}}/tasks
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "titulo": "Algo" }
+
+### 44. Beto (colaborador) lista las tareas (200) y filtra por estado
+GET http://localhost:8000/projects/{{pid}}/tasks
+Authorization: Bearer {{betoToken}}
+
+###
+GET http://localhost:8000/projects/{{pid}}/tasks?estado=En%20proceso
+Authorization: Bearer {{betoToken}}
+
+### 45. Beto cambia el estado de su tarea (200)
+PUT http://localhost:8000/projects/{{pid}}/tasks/{{tid}}
+Content-Type: application/json
+Authorization: Bearer {{betoToken}}
+
+{ "estado": "En proceso" }
+
+### 46. Reasignar a alguien que no participa (409)
+PUT http://localhost:8000/projects/{{pid}}/tasks/{{tid}}
+Content-Type: application/json
+Authorization: Bearer {{anaToken}}
+
+{ "responsableId": 4 }
+
+### 47. Reglas de baja con la tarea de Beto todavía asignada (los tres dan 409)
+DELETE http://localhost:8000/projects/{{pid}}/members/3
+Authorization: Bearer {{anaToken}}
+
+###
+DELETE http://localhost:8000/projects/{{pid}}
+Authorization: Bearer {{anaToken}}
+
+###
+DELETE http://localhost:8000/users/3
+Authorization: Bearer {{adminToken}}
+
+### 48. Beto no es dueño, no puede eliminar tareas (403 NOT_PROJECT_OWNER)
+DELETE http://localhost:8000/projects/{{pid}}/tasks/{{tid}}
+Authorization: Bearer {{betoToken}}
+
+### 49. Ana elimina la tarea (204) y otra vez (404 TASK_NOT_FOUND)
+DELETE http://localhost:8000/projects/{{pid}}/tasks/{{tid}}
+Authorization: Bearer {{anaToken}}
+
+###
+DELETE http://localhost:8000/projects/{{pid}}/tasks/{{tid}}
+Authorization: Bearer {{anaToken}}
+
+### 50. Sin tareas, ahora sí se puede quitar a Beto (204) y borrar el proyecto (204)
+DELETE http://localhost:8000/projects/{{pid}}/members/3
+Authorization: Bearer {{anaToken}}
+
+###
+DELETE http://localhost:8000/projects/{{pid}}
+Authorization: Bearer {{anaToken}}

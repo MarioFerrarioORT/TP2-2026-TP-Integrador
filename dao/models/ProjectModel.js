@@ -31,7 +31,6 @@ ProjectModel.init(
       allowNull: false,
       defaultValue: "",
       validate: {
-        notEmpty: { msg: "La descripción no puede estar vacía" },
         len: {
           args: [0, 500],
           msg: "La descripción no puede superar los 500 caracteres",

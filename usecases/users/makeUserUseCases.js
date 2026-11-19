@@ -11,14 +11,15 @@ import deleteUser from "./deleteUser.js";
  * de modo que el controlador llama a createUser(data) sin saber nada de ellas.
  * "actor" es quien hace la petición ({ id, rol }), tomado del token.
  */
-function makeUserUseCases(dao, hasher, projectsDao) {
+function makeUserUseCases(dao, hasher, projectsDao, tasksDao) {
   return {
     getUsers: (filters) => getUsers(filters, dao),
     getUserById: (id) => getUserById(id, dao),
     createUser: (data) => createUser(data, dao, hasher),
     updateUser: (id, changes) => updateUser(id, changes, dao, hasher),
     updateUserRole: (id, rol, actor) => updateUserRole(id, rol, actor, dao),
-    deleteUser: (id, actor) => deleteUser(id, actor, dao, projectsDao),
+    deleteUser: (id, actor) =>
+      deleteUser(id, actor, dao, projectsDao, tasksDao),
   };
 }
 
