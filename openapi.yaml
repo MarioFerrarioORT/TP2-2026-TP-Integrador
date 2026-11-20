@@ -1,0 +1,1043 @@
+openapi: 3.1.0
+
+info:
+  title: API Gestor de Proyectos
+  version: 1.0.0
+  description: |
+    API REST para gestionar **proyectos**, sus **colaboradores** y las **tareas** de cada proyecto.
+
+    **Cómo probarla desde esta página**
+    1. Registrate con `POST /auth/register` o iniciá sesión con `POST /auth/login`.
+    2. Copiá el `token` de la respuesta del login.
+    3. Tocá el botón **Authorize**, pegá el token (sin la palabra `Bearer`) y confirmá.
+    4. Probá cualquier endpoint con **Try it out**.
+
+    **Reglas generales**
+    - Todos los errores tienen la misma forma (ver el schema `Error`): `{ "error": { "code", "message", "details?" } }`.
+    - Un JSON mal formado responde `400 INVALID_JSON`; una ruta inexistente, `404 ROUTE_NOT_FOUND`.
+    - Los permisos sobre proyectos dependen de la pertenencia: el **dueño** gestiona el proyecto y sus colaboradores; el dueño y los **colaboradores** ven el proyecto y trabajan sus tareas. El rol `admin` solo administra usuarios.
+    - Las fechas tienen formato `AAAA-MM-DD`.
+    - La documentación es la misma con persistencia en memoria o con Sequelize (SQLite): las respuestas son idénticas.
+
+servers:
+  - url: /
+    description: Este mismo servidor
+
+tags:
+  - name: Auth
+    description: Registro, inicio de sesión y perfil propio
+  - name: Usuarios
+    description: Administración de usuarios (solo rol `admin`)
+  - name: Proyectos
+    description: Proyectos y sus colaboradores
+  - name: Tareas
+    description: Tareas dentro de un proyecto
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ---------------------------------------------------------------- AUTH
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registrarse
+      description: Crea un usuario con rol `usuario`. El rol nunca se acepta desde el cuerpo de la petición.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+            example:
+              nombre: Ana
+              email: ana@mail.com
+              password: clave12345
+      responses:
+        "201":
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: El email ya está registrado (`EMAIL_DUPLICATED`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: EMAIL_DUPLICATED, message: Ese email ya está registrado }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión
+      description: Devuelve un token JWT para usar en el resto de los endpoints. Ante un email inexistente o una contraseña incorrecta responde siempre lo mismo, para no revelar qué emails existen.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Login"
+            example:
+              email: ana@mail.com
+              password: clave12345
+      responses:
+        "200":
+          description: Sesión iniciada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Email o contraseña incorrectos (`INVALID_CREDENTIALS`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: INVALID_CREDENTIALS, message: Email o contraseña incorrectos }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Ver mi perfil
+      responses:
+        "200":
+          description: Datos del usuario autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/UserNotFound"
+
+  # ------------------------------------------------------------- USUARIOS
+  /users:
+    get:
+      tags: [Usuarios]
+      summary: Listar usuarios
+      description: Solo `admin`. Permite filtrar por nombre o email (búsqueda parcial) y paginar.
+      parameters:
+        - name: nombre
+          in: query
+          description: Texto contenido en el nombre
+          schema: { type: string }
+          example: an
+        - name: email
+          in: query
+          description: Texto contenido en el email
+          schema: { type: string }
+          example: mail.com
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/ForbiddenRole"
+    post:
+      tags: [Usuarios]
+      summary: Crear un usuario
+      description: Solo `admin`. El usuario creado tiene rol `usuario`; para hacerlo administrador se usa `PATCH /users/{id}/rol`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+            example:
+              nombre: Beto
+              email: beto@mail.com
+              password: clave12345
+      responses:
+        "201":
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/ForbiddenRole"
+        "409":
+          description: El email ya está registrado (`EMAIL_DUPLICATED`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: EMAIL_DUPLICATED, message: Ese email ya está registrado }
+
+  /users/{id}:
+    parameters:
+      - $ref: "#/components/parameters/UserId"
+    get:
+      tags: [Usuarios]
+      summary: Ver un usuario
+      description: Solo `admin`.
+      responses:
+        "200":
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/ForbiddenRole"
+        "404":
+          $ref: "#/components/responses/UserNotFound"
+    put:
+      tags: [Usuarios]
+      summary: Modificar un usuario
+      description: Solo `admin`. Actualización parcial; hay que enviar al menos un campo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+            example:
+              nombre: Beto Pérez
+      responses:
+        "200":
+          description: Usuario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/ForbiddenRole"
+        "404":
+          $ref: "#/components/responses/UserNotFound"
+        "409":
+          description: El email ya está registrado (`EMAIL_DUPLICATED`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: EMAIL_DUPLICATED, message: Ese email ya está registrado }
+    delete:
+      tags: [Usuarios]
+      summary: Eliminar un usuario
+      description: |
+        Solo `admin`. No se puede eliminar a uno mismo, ni a un usuario que sea dueño de proyectos o tenga tareas asignadas.
+        Si el usuario solo era colaborador, se lo quita de esos proyectos.
+      responses:
+        "204":
+          description: Usuario eliminado
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/ForbiddenRole"
+        "404":
+          $ref: "#/components/responses/UserNotFound"
+        "409":
+          description: No se puede eliminar al usuario
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                CANNOT_DELETE_SELF:
+                  value:
+                    error: { code: CANNOT_DELETE_SELF, message: No podés eliminar tu propio usuario }
+                USER_HAS_PROJECTS:
+                  value:
+                    error: { code: USER_HAS_PROJECTS, message: No se puede eliminar a un usuario que es dueño de proyectos }
+                USER_HAS_TASKS:
+                  value:
+                    error: { code: USER_HAS_TASKS, message: No se puede eliminar a un usuario que tiene tareas asignadas }
+
+  /users/{id}/rol:
+    patch:
+      tags: [Usuarios]
+      summary: Cambiar el rol de un usuario
+      description: Solo `admin`. Nadie puede cambiarse el rol a sí mismo, para que el sistema nunca se quede sin administradores.
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleUpdate"
+            example:
+              rol: admin
+      responses:
+        "200":
+          description: Rol actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/ForbiddenRole"
+        "404":
+          $ref: "#/components/responses/UserNotFound"
+        "409":
+          description: No podés cambiar tu propio rol (`CANNOT_CHANGE_OWN_ROLE`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: CANNOT_CHANGE_OWN_ROLE, message: No podés cambiar tu propio rol }
+
+  # ------------------------------------------------------------ PROYECTOS
+  /projects:
+    get:
+      tags: [Proyectos]
+      summary: Listar mis proyectos
+      description: Devuelve solo los proyectos en los que el usuario autenticado es dueño o colaborador.
+      parameters:
+        - name: titulo
+          in: query
+          description: Texto contenido en el título
+          schema: { type: string }
+          example: sitio
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Lista de proyectos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Proyectos]
+      summary: Crear un proyecto
+      description: |
+        El dueño es el usuario autenticado y la fecha de creación es la de hoy; ninguno de los dos se acepta en el cuerpo.
+        La fecha de fin no puede ser anterior a la de creación.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectCreate"
+            example:
+              titulo: Sitio web
+              descripcion: Rediseño del sitio institucional
+              fechaFin: "2026-12-31"
+      responses:
+        "201":
+          description: Proyecto creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequestDates"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /projects/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [Proyectos]
+      summary: Ver un proyecto
+      description: Lo pueden ver el dueño y los colaboradores.
+      responses:
+        "200":
+          description: Proyecto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotProjectMember"
+        "404":
+          $ref: "#/components/responses/ProjectNotFound"
+    put:
+      tags: [Proyectos]
+      summary: Modificar un proyecto
+      description: Solo el dueño. Actualización parcial; hay que enviar al menos un campo. La fecha de fin no puede ser anterior a la de creación.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdate"
+            example:
+              titulo: Sitio web 2.0
+      responses:
+        "200":
+          description: Proyecto actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequestDates"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotProjectOwner"
+        "404":
+          $ref: "#/components/responses/ProjectNotFound"
+    delete:
+      tags: [Proyectos]
+      summary: Eliminar un proyecto
+      description: Solo el dueño. El proyecto no puede tener tareas; si las tiene, primero hay que eliminarlas. Se eliminan también sus colaboradores.
+      responses:
+        "204":
+          description: Proyecto eliminado
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotProjectOwner"
+        "404":
+          $ref: "#/components/responses/ProjectNotFound"
+        "409":
+          description: El proyecto tiene tareas (`PROJECT_HAS_TASKS`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: PROJECT_HAS_TASKS, message: No se puede eliminar un proyecto que tiene tareas }
+
+  /projects/{id}/members:
+    post:
+      tags: [Proyectos]
+      summary: Agregar un colaborador
+      description: |
+        Solo el dueño. El colaborador se indica por email. Emite el evento `project.memberAdded`, que el listener notifica.
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddMember"
+            example:
+              email: beto@mail.com
+      responses:
+        "201":
+          description: Colaborador agregado. Devuelve el proyecto actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotProjectOwner"
+        "404":
+          description: El proyecto o el usuario no existen
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                PROJECT_NOT_FOUND:
+                  value:
+                    error: { code: PROJECT_NOT_FOUND, message: No existe un proyecto con ese id }
+                USER_NOT_FOUND:
+                  value:
+                    error: { code: USER_NOT_FOUND, message: No existe un usuario con ese email }
+        "409":
+          description: No se puede agregar a ese usuario
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                OWNER_CANNOT_BE_COLLABORATOR:
+                  value:
+                    error: { code: OWNER_CANNOT_BE_COLLABORATOR, message: El dueño del proyecto ya participa en él }
+                ALREADY_COLLABORATOR:
+                  value:
+                    error: { code: ALREADY_COLLABORATOR, message: Ese usuario ya es colaborador del proyecto }
+
+  /projects/{id}/members/{userId}:
+    delete:
+      tags: [Proyectos]
+      summary: Quitar un colaborador
+      description: Solo el dueño. No se puede quitar a un colaborador que tenga tareas asignadas en el proyecto.
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - $ref: "#/components/parameters/MemberUserId"
+      responses:
+        "204":
+          description: Colaborador quitado
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotProjectOwner"
+        "404":
+          description: El proyecto no existe o el usuario no es colaborador
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                PROJECT_NOT_FOUND:
+                  value:
+                    error: { code: PROJECT_NOT_FOUND, message: No existe un proyecto con ese id }
+                MEMBER_NOT_FOUND:
+                  value:
+                    error: { code: MEMBER_NOT_FOUND, message: Ese usuario no es colaborador del proyecto }
+        "409":
+          description: El colaborador tiene tareas asignadas (`MEMBER_HAS_TASKS`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: MEMBER_HAS_TASKS, message: No se puede quitar a un colaborador que tiene tareas asignadas en este proyecto }
+
+  # --------------------------------------------------------------- TAREAS
+  /projects/{id}/tasks:
+    get:
+      tags: [Tareas]
+      summary: Listar las tareas de un proyecto
+      description: Lo pueden ver el dueño y los colaboradores. Permite filtrar por estado y responsable, y paginar.
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - name: estado
+          in: query
+          description: Filtra por estado
+          schema:
+            $ref: "#/components/schemas/TaskState"
+        - name: responsableId
+          in: query
+          description: Filtra por el id del responsable
+          schema: { type: integer, minimum: 1 }
+          example: 3
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Lista de tareas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotProjectMember"
+        "404":
+          $ref: "#/components/responses/ProjectNotFound"
+    post:
+      tags: [Tareas]
+      summary: Crear una tarea
+      description: |
+        Pueden crearla el dueño y los colaboradores. El responsable es obligatorio y debe ser el dueño o un colaborador del proyecto.
+        Si no se indica estado, queda `Pendiente`. Emite el evento `task.assigned`, que el listener notifica.
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCreate"
+            example:
+              titulo: Diseñar la home
+              descripcion: Mockups de la página principal
+              responsableId: 3
+      responses:
+        "201":
+          description: Tarea creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotProjectMember"
+        "404":
+          $ref: "#/components/responses/ProjectNotFound"
+        "409":
+          $ref: "#/components/responses/ResponsibleNotInProject"
+
+  /projects/{id}/tasks/{taskId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/TaskId"
+    get:
+      tags: [Tareas]
+      summary: Ver una tarea
+      description: Lo pueden ver el dueño y los colaboradores. Si la tarea pertenece a otro proyecto, responde 404.
+      responses:
+        "200":
+          description: Tarea encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotProjectMember"
+        "404":
+          $ref: "#/components/responses/ProjectOrTaskNotFound"
+    put:
+      tags: [Tareas]
+      summary: Modificar una tarea
+      description: |
+        Pueden hacerlo el dueño y los colaboradores. Sirve también para cambiar el estado o reasignarla.
+        Actualización parcial; hay que enviar al menos un campo. Si cambia el responsable, el nuevo debe ser el dueño o un colaborador
+        y se emite el evento `task.assigned`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+            example:
+              estado: En proceso
+      responses:
+        "200":
+          description: Tarea actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotProjectMember"
+        "404":
+          $ref: "#/components/responses/ProjectOrTaskNotFound"
+        "409":
+          $ref: "#/components/responses/ResponsibleNotInProject"
+    delete:
+      tags: [Tareas]
+      summary: Eliminar una tarea
+      description: Solo el dueño del proyecto.
+      responses:
+        "204":
+          description: Tarea eliminada
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotProjectOwner"
+        "404":
+          $ref: "#/components/responses/ProjectOrTaskNotFound"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token obtenido en `POST /auth/login`. Se pega sin la palabra `Bearer`.
+
+  # ---------------------------------------------------------- PARÁMETROS
+  parameters:
+    UserId:
+      name: id
+      in: path
+      required: true
+      description: Id del usuario
+      schema: { type: integer, minimum: 1 }
+      example: 2
+    ProjectId:
+      name: id
+      in: path
+      required: true
+      description: Id del proyecto
+      schema: { type: integer, minimum: 1 }
+      example: 1
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      description: Id de la tarea
+      schema: { type: integer, minimum: 1 }
+      example: 1
+    MemberUserId:
+      name: userId
+      in: path
+      required: true
+      description: Id del usuario colaborador
+      schema: { type: integer, minimum: 1 }
+      example: 3
+    Page:
+      name: page
+      in: query
+      description: Número de página (empieza en 1). Se usa junto con `limit`.
+      schema: { type: integer, minimum: 1 }
+      example: 1
+    Limit:
+      name: limit
+      in: query
+      description: Cantidad máxima de resultados por página (máximo 100). Sin `limit` no se pagina.
+      schema: { type: integer, minimum: 1, maximum: 100 }
+      example: 10
+
+  # ------------------------------------------------------------- SCHEMAS
+  schemas:
+    Role:
+      type: string
+      enum: [usuario, admin]
+      example: usuario
+
+    TaskState:
+      type: string
+      enum: [Pendiente, En proceso, Finalizado]
+      example: Pendiente
+
+    User:
+      type: object
+      required: [id, nombre, email, rol]
+      properties:
+        id: { type: integer, example: 2 }
+        nombre: { type: string, example: Ana }
+        email: { type: string, format: email, example: ana@mail.com }
+        rol:
+          $ref: "#/components/schemas/Role"
+
+    UserCreate:
+      type: object
+      required: [nombre, email, password]
+      properties:
+        nombre: { type: string, minLength: 2, example: Ana }
+        email: { type: string, format: email, example: ana@mail.com }
+        password: { type: string, minLength: 8, maxLength: 72, format: password, example: clave12345 }
+
+    UserUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        nombre: { type: string, minLength: 2, example: Ana María }
+        email: { type: string, format: email, example: ana.maria@mail.com }
+        password: { type: string, minLength: 8, maxLength: 72, format: password, example: otraClave123 }
+
+    RoleUpdate:
+      type: object
+      required: [rol]
+      properties:
+        rol:
+          $ref: "#/components/schemas/Role"
+
+    Login:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, example: ana@mail.com }
+        password: { type: string, format: password, example: clave12345 }
+
+    LoginResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+          description: JWT para el header `Authorization`
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          $ref: "#/components/schemas/User"
+
+    Project:
+      type: object
+      required: [id, titulo, descripcion, fechaCreacion, fechaFin, ownerId, colaboradores]
+      properties:
+        id: { type: integer, example: 1 }
+        titulo: { type: string, example: Sitio web }
+        descripcion: { type: string, example: Rediseño del sitio institucional }
+        fechaCreacion: { type: string, format: date, example: "2026-11-19" }
+        fechaFin: { type: string, format: date, example: "2026-12-31" }
+        ownerId:
+          type: integer
+          description: Id del usuario dueño del proyecto
+          example: 2
+        colaboradores:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+
+    ProjectCreate:
+      type: object
+      required: [titulo, fechaFin]
+      properties:
+        titulo: { type: string, minLength: 2, maxLength: 100, example: Sitio web }
+        descripcion: { type: string, maxLength: 500, default: "", example: Rediseño del sitio institucional }
+        fechaFin:
+          type: string
+          format: date
+          description: Formato AAAA-MM-DD; no puede ser anterior a hoy
+          example: "2026-12-31"
+
+    ProjectUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        titulo: { type: string, minLength: 2, maxLength: 100, example: Sitio web 2.0 }
+        descripcion: { type: string, maxLength: 500, example: Nueva descripción }
+        fechaFin:
+          type: string
+          format: date
+          description: Formato AAAA-MM-DD; no puede ser anterior a la fecha de creación
+          example: "2027-01-15"
+
+    AddMember:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email, example: beto@mail.com }
+
+    Task:
+      type: object
+      required: [id, titulo, descripcion, estado, projectId, responsable]
+      properties:
+        id: { type: integer, example: 1 }
+        titulo: { type: string, example: Diseñar la home }
+        descripcion: { type: string, example: Mockups de la página principal }
+        estado:
+          $ref: "#/components/schemas/TaskState"
+        projectId: { type: integer, example: 1 }
+        responsable:
+          $ref: "#/components/schemas/User"
+
+    TaskCreate:
+      type: object
+      required: [titulo, responsableId]
+      properties:
+        titulo: { type: string, minLength: 2, maxLength: 100, example: Diseñar la home }
+        descripcion: { type: string, maxLength: 500, default: "", example: Mockups de la página principal }
+        estado:
+          $ref: "#/components/schemas/TaskState"
+        responsableId:
+          type: integer
+          minimum: 1
+          description: Debe ser el dueño del proyecto o uno de sus colaboradores
+          example: 3
+
+    TaskUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        titulo: { type: string, minLength: 2, maxLength: 100, example: Diseñar la home v2 }
+        descripcion: { type: string, maxLength: 500, example: Versión final }
+        estado:
+          $ref: "#/components/schemas/TaskState"
+        responsableId:
+          type: integer
+          minimum: 1
+          description: Debe ser el dueño del proyecto o uno de sus colaboradores
+          example: 2
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Código estable del error, pensado para que lo use el cliente
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              description: Mensaje legible
+              example: Datos de body inválidos
+            details:
+              type: array
+              description: Solo en errores de validación; un elemento por campo inválido
+              items:
+                type: object
+                required: [field, message]
+                properties:
+                  field: { type: string, example: titulo }
+                  message: { type: string, example: El título debe tener al menos 2 caracteres }
+
+  # ----------------------------------------------------------- RESPUESTAS
+  responses:
+    BadRequest:
+      description: Datos inválidos (`VALIDATION_ERROR`) o JSON mal formado (`INVALID_JSON`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            VALIDATION_ERROR:
+              value:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Datos de body inválidos
+                  details:
+                    - { field: titulo, message: El título debe tener al menos 2 caracteres }
+            INVALID_JSON:
+              value:
+                error: { code: INVALID_JSON, message: El cuerpo de la petición no es un JSON válido }
+
+    BadRequestDates:
+      description: Datos inválidos (`VALIDATION_ERROR`), JSON mal formado (`INVALID_JSON`) o fechas incoherentes (`INVALID_DATE_RANGE`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            VALIDATION_ERROR:
+              value:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Datos de body inválidos
+                  details:
+                    - { field: fechaFin, message: La fecha debe tener formato AAAA-MM-DD y ser válida }
+            INVALID_DATE_RANGE:
+              value:
+                error: { code: INVALID_DATE_RANGE, message: La fecha de fin no puede ser anterior a la fecha de creación }
+
+    Unauthorized:
+      description: Falta el token (`TOKEN_MISSING`), es inválido (`TOKEN_INVALID`) o venció (`TOKEN_EXPIRED`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            TOKEN_MISSING:
+              value:
+                error: { code: TOKEN_MISSING, message: "Falta el token. Enviá el header Authorization: Bearer <token>" }
+            TOKEN_INVALID:
+              value:
+                error: { code: TOKEN_INVALID, message: Token inválido }
+            TOKEN_EXPIRED:
+              value:
+                error: { code: TOKEN_EXPIRED, message: El token venció, iniciá sesión de nuevo }
+
+    ForbiddenRole:
+      description: El usuario no tiene el rol necesario (`FORBIDDEN`). Estos endpoints son solo para `admin`.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: { code: FORBIDDEN, message: No tenés permiso para realizar esta acción }
+
+    NotProjectMember:
+      description: El usuario no es dueño ni colaborador del proyecto (`NOT_PROJECT_MEMBER`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: { code: NOT_PROJECT_MEMBER, message: No participás en este proyecto }
+
+    NotProjectOwner:
+      description: Solo el dueño del proyecto puede hacerlo (`NOT_PROJECT_OWNER`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: { code: NOT_PROJECT_OWNER, message: Solo el dueño del proyecto puede hacer esto }
+
+    UserNotFound:
+      description: El usuario no existe (`USER_NOT_FOUND`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: { code: USER_NOT_FOUND, message: No existe un usuario con ese id }
+
+    ProjectNotFound:
+      description: El proyecto no existe (`PROJECT_NOT_FOUND`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: { code: PROJECT_NOT_FOUND, message: No existe un proyecto con ese id }
+
+    ProjectOrTaskNotFound:
+      description: El proyecto no existe (`PROJECT_NOT_FOUND`) o la tarea no existe en ese proyecto (`TASK_NOT_FOUND`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            PROJECT_NOT_FOUND:
+              value:
+                error: { code: PROJECT_NOT_FOUND, message: No existe un proyecto con ese id }
+            TASK_NOT_FOUND:
+              value:
+                error: { code: TASK_NOT_FOUND, message: No existe una tarea con ese id en este proyecto }
+
+    ResponsibleNotInProject:
+      description: El responsable no es el dueño ni un colaborador del proyecto (`RESPONSIBLE_NOT_IN_PROJECT`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: RESPONSIBLE_NOT_IN_PROJECT
+              message: El responsable debe ser el dueño del proyecto o uno de sus colaboradores

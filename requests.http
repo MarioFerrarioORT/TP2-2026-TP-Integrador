@@ -1,53 +1,8 @@
-### 1. Crear usuario (201) — el rol del body se ignora
-POST http://localhost:8000/users
-Content-Type: application/json
+@baseUrl = http://localhost:8000
 
-{ "nombre": "Ana Pérez", "email": "ANA@mail.com", "password": "clave12345", "rol": "admin" }
-
-### 2. Mismo email (409 EMAIL_DUPLICATED)
-POST http://localhost:8000/users
-Content-Type: application/json
-
-{ "nombre": "Ana 2", "email": "ana@mail.com", "password": "clave12345" }
-
-### 3. Body inválido (400, con 3 errores en details)
-POST http://localhost:8000/users
-Content-Type: application/json
-
-{ "nombre": "A", "email": "no-es-email", "password": "123" }
-
-### 4. Listar (200)
-GET http://localhost:8000/users
-
-### 5. Obtener uno (200)
-GET http://localhost:8000/users/1
-
-### 6. Inexistente (404 USER_NOT_FOUND)
-GET http://localhost:8000/users/99
-
-### 7. ID inválido (400)
-GET http://localhost:8000/users/abc
-
-### 8. Actualizar nombre (200)
-PUT http://localhost:8000/users/1
-Content-Type: application/json
-
-{ "nombre": "Ana María" }
-
-### 9. Actualizar con body vacío (400)
-PUT http://localhost:8000/users/1
-Content-Type: application/json
-
-{}
-
-### 10. Eliminar (204)
-DELETE http://localhost:8000/users/1
-
-####################################################################################################
-
-### 11. Login admin (200) — guarda el token
+### 1. Login admin (200) — guarda el token
 # @name loginAdmin
-POST http://localhost:8000/auth/login
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 { "email": "admin@gestor.com", "password": "passwordsecreto123" }
@@ -55,27 +10,27 @@ Content-Type: application/json
 ###
 @adminToken = {{loginAdmin.response.body.$.token}}
 
-### 12. Login con contraseña incorrecta (401 INVALID_CREDENTIALS)
-POST http://localhost:8000/auth/login
+### 2. Login con contraseña incorrecta (401 INVALID_CREDENTIALS)
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 { "email": "admin@gestor.com", "password": "incorrecta" }
 
-### 13. Login con email inexistente (401, el MISMO error)
-POST http://localhost:8000/auth/login
+### 3. Login con email inexistente (401, el MISMO error)
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 { "email": "nadie@gestor.com", "password": "incorrecta" }
 
-### 14. Registro público (201) — el rol sale "usuario" aunque mandes "admin"
-POST http://localhost:8000/auth/register
+### 4. Registro público (201) — el rol sale "usuario" aunque mandes "admin"
+POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 { "nombre": "Ana", "email": "ana@mail.com", "password": "clave12345", "rol": "admin" }
 
-### 15. Login de Ana — guarda su token
+### 5. Login de Ana — guarda su token
 # @name loginAna
-POST http://localhost:8000/auth/login
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 { "email": "ana@mail.com", "password": "clave12345" }
@@ -83,50 +38,50 @@ Content-Type: application/json
 ###
 @anaToken = {{loginAna.response.body.$.token}}
 
-### 16. Mi perfil sin token (401 TOKEN_MISSING)
-GET http://localhost:8000/auth/me
+### 6. Mi perfil sin token (401 TOKEN_MISSING)
+GET {{baseUrl}}/auth/me
 
-### 17. Mi perfil con token (200)
-GET http://localhost:8000/auth/me
+### 7. Mi perfil con token (200)
+GET {{baseUrl}}/auth/me
 Authorization: Bearer {{anaToken}}
 
-### 18. Token alterado (401 TOKEN_INVALID): cambiá una letra del token
-GET http://localhost:8000/auth/me
+### 8. Token alterado (401 TOKEN_INVALID): cambiá una letra del token
+GET {{baseUrl}}/auth/me
 Authorization: Bearer {{anaToken}}x
 
-### 19. Usuario común pide /users (403 FORBIDDEN)
-GET http://localhost:8000/users
+### 9. Usuario común pide /users (403 FORBIDDEN)
+GET {{baseUrl}}/users
 Authorization: Bearer {{anaToken}}
 
-### 20. Admin pide /users (200)
-GET http://localhost:8000/users
+### 10. Admin pide /users (200)
+GET {{baseUrl}}/users
 Authorization: Bearer {{adminToken}}
 
-### 21. Admin se borra a sí mismo (409 CANNOT_DELETE_SELF)
-DELETE http://localhost:8000/users/1
+### 11. Admin se borra a sí mismo (409 CANNOT_DELETE_SELF)
+DELETE {{baseUrl}}/users/1
 Authorization: Bearer {{adminToken}}
 
-### 22. Admin cambia el rol de Ana (200)
-PATCH http://localhost:8000/users/2/rol
+### 12. Admin cambia el rol de Ana (200)
+PATCH {{baseUrl}}/users/2/rol
 Content-Type: application/json
 Authorization: Bearer {{adminToken}}
 
 { "rol": "admin" }
-### 23. Registrar a Beto y Carla (201 cada una)
-POST http://localhost:8000/auth/register
+### 13. Registrar a Beto y Carla (201 cada una)
+POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 { "nombre": "Beto", "email": "beto@mail.com", "password": "clave12345" }
 
 ###
-POST http://localhost:8000/auth/register
+POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 { "nombre": "Carla", "email": "carla@mail.com", "password": "clave12345" }
 
-### 24. Login de Beto y Carla (guardan su token)
+### 14. Login de Beto y Carla (guardan su token)
 # @name loginBeto
-POST http://localhost:8000/auth/login
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 { "email": "beto@mail.com", "password": "clave12345" }
@@ -136,7 +91,7 @@ Content-Type: application/json
 
 ###
 # @name loginCarla
-POST http://localhost:8000/auth/login
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 { "email": "carla@mail.com", "password": "clave12345" }
@@ -144,98 +99,140 @@ Content-Type: application/json
 ###
 @carlaToken = {{loginCarla.response.body.$.token}}
 
-### 25. Ana crea un proyecto (201): ownerId y fechaCreacion salen del servidor
-POST http://localhost:8000/projects
+### 15. Ana crea un proyecto (201): ownerId y fechaCreacion salen del servidor
+POST {{baseUrl}}/projects
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "titulo": "Sitio web", "descripcion": "Rediseño", "fechaFin": "2026-12-31", "ownerId": 99 }
 
-### 26. Fecha de fin en el pasado (400 INVALID_DATE_RANGE)
-POST http://localhost:8000/projects
+### 16. Fecha de fin en el pasado (400 INVALID_DATE_RANGE)
+POST {{baseUrl}}/projects
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "titulo": "Viejo", "fechaFin": "2020-01-01" }
 
-### 27. Fecha con formato inválido (400 VALIDATION_ERROR)
-POST http://localhost:8000/projects
+### 17. Fecha con formato inválido (400 VALIDATION_ERROR)
+POST {{baseUrl}}/projects
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "titulo": "Nuevo", "fechaFin": "31/12/2026" }
 
-### 28. Ana agrega a Beto por email (201, aparece en colaboradores)
-POST http://localhost:8000/projects/1/members
+### 18. Ana agrega a Beto por email (201, aparece en colaboradores)
+POST {{baseUrl}}/projects/1/members
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "email": "beto@mail.com" }
 
-### 29. Mismo email otra vez (409 ALREADY_COLLABORATOR)
-POST http://localhost:8000/projects/1/members
+### 19. Mismo email otra vez (409 ALREADY_COLLABORATOR)
+POST {{baseUrl}}/projects/1/members
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "email": "beto@mail.com" }
 
-### 30. Agregar a la propia dueña (409 OWNER_CANNOT_BE_COLLABORATOR)
-POST http://localhost:8000/projects/1/members
+### 20. Agregar a la propia dueña (409 OWNER_CANNOT_BE_COLLABORATOR)
+POST {{baseUrl}}/projects/1/members
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "email": "ana@mail.com" }
 
-### 31. Beto intenta agregar a Carla (403 NOT_PROJECT_OWNER)
-POST http://localhost:8000/projects/1/members
+### 21. Beto intenta agregar a Carla (403 NOT_PROJECT_OWNER)
+POST {{baseUrl}}/projects/1/members
 Content-Type: application/json
 Authorization: Bearer {{betoToken}}
 
 { "email": "carla@mail.com" }
 
-### 32. Beto ve el proyecto (200) / Carla no (403 NOT_PROJECT_MEMBER)
-GET http://localhost:8000/projects/1
+### 22. Beto ve el proyecto (200) / Carla no (403 NOT_PROJECT_MEMBER)
+GET {{baseUrl}}/projects/1
 Authorization: Bearer {{betoToken}}
 
 ###
-GET http://localhost:8000/projects/1
+GET {{baseUrl}}/projects/1
 Authorization: Bearer {{carlaToken}}
 
-### 33. Mis proyectos (200): Beto ve el de Ana porque es colaborador
-GET http://localhost:8000/projects
+### 23. Mis proyectos (200): Beto ve el de Ana porque es colaborador
+GET {{baseUrl}}/projects
 Authorization: Bearer {{betoToken}}
 
-### 34. Beto intenta modificar (403) / Ana modifica (200)
-PUT http://localhost:8000/projects/1
+### 24. Beto intenta modificar (403) / Ana modifica (200)
+PUT {{baseUrl}}/projects/1
 Content-Type: application/json
 Authorization: Bearer {{betoToken}}
 
 { "titulo": "Hack" }
 
 ###
-PUT http://localhost:8000/projects/1
+PUT {{baseUrl}}/projects/1
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "titulo": "Sitio web 2.0" }
 
-### 35. Ana quita a Beto (204) y otra vez (404 MEMBER_NOT_FOUND)
-DELETE http://localhost:8000/projects/1/members/3
+### 25. Ana quita a Beto (204) y otra vez (404 MEMBER_NOT_FOUND)
+DELETE {{baseUrl}}/projects/1/members/3
 Authorization: Bearer {{anaToken}}
 
-### 36. El admin intenta borrar a Ana, dueña (409 USER_HAS_PROJECTS)
-DELETE http://localhost:8000/users/2
+### 26. El admin intenta borrar a Ana, dueña (409 USER_HAS_PROJECTS)
+DELETE {{baseUrl}}/users/2
 Authorization: Bearer {{adminToken}}
 
-### 37. Ana elimina el proyecto (204)
-DELETE http://localhost:8000/projects/1
+### 27. Ana elimina el proyecto (204)
+DELETE {{baseUrl}}/projects/1
 Authorization: Bearer {{anaToken}}
 
-############################################################
+##################################################################
 
-### 38. Ana crea un proyecto para las pruebas de tareas
+### 1. Login admin (200) — guarda el token
+# @name loginAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@gestor.com", "password": "passwordsecreto123" }
+
+###
+@adminToken = {{loginAdmin.response.body.$.token}}
+
+### 5. Login de Ana — guarda su token
+# @name loginAna
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "ana@mail.com", "password": "clave12345" }
+
+###
+@anaToken = {{loginAna.response.body.$.token}}
+
+### 14. Login de Beto y Carla (guardan su token)
+# @name loginBeto
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "beto@mail.com", "password": "clave12345" }
+
+###
+@betoToken = {{loginBeto.response.body.$.token}}
+
+###
+# @name loginCarla
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "carla@mail.com", "password": "clave12345" }
+
+###
+@carlaToken = {{loginCarla.response.body.$.token}}
+
+####################################################################
+
+### 28. Ana crea un proyecto para las pruebas de tareas
 # @name proyecto7
-POST http://localhost:8000/projects
+POST {{baseUrl}}/projects
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
@@ -244,16 +241,16 @@ Authorization: Bearer {{anaToken}}
 ###
 @pid = {{proyecto7.response.body.$.id}}
 
-### 39. Ana agrega a Beto como colaborador (201)
-POST http://localhost:8000/projects/{{pid}}/members
+### 29. Ana agrega a Beto como colaborador (201)
+POST {{baseUrl}}/projects/{{pid}}/members
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "email": "beto@mail.com" }
 
-### 40. Ana crea una tarea para Beto (201, estado "Pendiente" por defecto)
+### 30. Ana crea una tarea para Beto (201, estado "Pendiente" por defecto)
 # @name tarea1
-POST http://localhost:8000/projects/{{pid}}/tasks
+POST {{baseUrl}}/projects/{{pid}}/tasks
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
@@ -262,93 +259,93 @@ Authorization: Bearer {{anaToken}}
 ###
 @tid = {{tarea1.response.body.$.id}}
 
-### 41. Responsable que no participa: Carla (409 RESPONSIBLE_NOT_IN_PROJECT)
-POST http://localhost:8000/projects/{{pid}}/tasks
+### 31. Responsable que no participa: Carla (409 RESPONSIBLE_NOT_IN_PROJECT)
+POST {{baseUrl}}/projects/{{pid}}/tasks
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "titulo": "Otra tarea", "responsableId": 4 }
 
-### 42. Carla no participa, no puede crear tareas (403 NOT_PROJECT_MEMBER)
-POST http://localhost:8000/projects/{{pid}}/tasks
+### 32. Carla no participa, no puede crear tareas (403 NOT_PROJECT_MEMBER)
+POST {{baseUrl}}/projects/{{pid}}/tasks
 Content-Type: application/json
 Authorization: Bearer {{carlaToken}}
 
 { "titulo": "Intruso", "responsableId": 2 }
 
-### 43. Estado inválido (400) / sin responsable (400)
-POST http://localhost:8000/projects/{{pid}}/tasks
+### 33. Estado inválido (400) / sin responsable (400)
+POST {{baseUrl}}/projects/{{pid}}/tasks
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "titulo": "Algo", "estado": "Hecho", "responsableId": 2 }
 
 ###
-POST http://localhost:8000/projects/{{pid}}/tasks
+POST {{baseUrl}}/projects/{{pid}}/tasks
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "titulo": "Algo" }
 
-### 44. Beto (colaborador) lista las tareas (200) y filtra por estado
-GET http://localhost:8000/projects/{{pid}}/tasks
+### 34. Beto (colaborador) lista las tareas (200) y filtra por estado
+GET {{baseUrl}}/projects/{{pid}}/tasks
 Authorization: Bearer {{betoToken}}
 
 ###
-GET http://localhost:8000/projects/{{pid}}/tasks?estado=En%20proceso
+GET {{baseUrl}}/projects/{{pid}}/tasks?estado=En%20proceso
 Authorization: Bearer {{betoToken}}
 
-### 45. Beto cambia el estado de su tarea (200)
-PUT http://localhost:8000/projects/{{pid}}/tasks/{{tid}}
+### 35. Beto cambia el estado de su tarea (200)
+PUT {{baseUrl}}/projects/{{pid}}/tasks/{{tid}}
 Content-Type: application/json
 Authorization: Bearer {{betoToken}}
 
 { "estado": "En proceso" }
 
-### 46. Reasignar a alguien que no participa (409)
-PUT http://localhost:8000/projects/{{pid}}/tasks/{{tid}}
+### 36. Reasignar a alguien que no participa (409)
+PUT {{baseUrl}}/projects/{{pid}}/tasks/{{tid}}
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "responsableId": 4 }
 
-### 47. Reglas de baja con la tarea de Beto todavía asignada (los tres dan 409)
-DELETE http://localhost:8000/projects/{{pid}}/members/3
+### 37. Reglas de baja con la tarea de Beto todavía asignada (los tres dan 409)
+DELETE {{baseUrl}}/projects/{{pid}}/members/3
 Authorization: Bearer {{anaToken}}
 
 ###
-DELETE http://localhost:8000/projects/{{pid}}
+DELETE {{baseUrl}}/projects/{{pid}}
 Authorization: Bearer {{anaToken}}
 
 ###
-DELETE http://localhost:8000/users/3
+DELETE {{baseUrl}}/users/3
 Authorization: Bearer {{adminToken}}
 
-### 48. Beto no es dueño, no puede eliminar tareas (403 NOT_PROJECT_OWNER)
-DELETE http://localhost:8000/projects/{{pid}}/tasks/{{tid}}
+### 38. Beto no es dueño, no puede eliminar tareas (403 NOT_PROJECT_OWNER)
+DELETE {{baseUrl}}/projects/{{pid}}/tasks/{{tid}}
 Authorization: Bearer {{betoToken}}
 
-### 49. Ana elimina la tarea (204) y otra vez (404 TASK_NOT_FOUND)
-DELETE http://localhost:8000/projects/{{pid}}/tasks/{{tid}}
+### 39. Ana elimina la tarea (204) y otra vez (404 TASK_NOT_FOUND)
+DELETE {{baseUrl}}/projects/{{pid}}/tasks/{{tid}}
 Authorization: Bearer {{anaToken}}
 
 ###
-DELETE http://localhost:8000/projects/{{pid}}/tasks/{{tid}}
+DELETE {{baseUrl}}/projects/{{pid}}/tasks/{{tid}}
 Authorization: Bearer {{anaToken}}
 
-### 50. Sin tareas, ahora sí se puede quitar a Beto (204) y borrar el proyecto (204)
-DELETE http://localhost:8000/projects/{{pid}}/members/3
+### 40. Sin tareas, ahora sí se puede quitar a Beto (204) y borrar el proyecto (204)
+DELETE {{baseUrl}}/projects/{{pid}}/members/3
 Authorization: Bearer {{anaToken}}
 
 ###
-DELETE http://localhost:8000/projects/{{pid}}
+DELETE {{baseUrl}}/projects/{{pid}}
 Authorization: Bearer {{anaToken}}
 
 #########################################################################
 
-### 51. Ana crea un proyecto para probar eventos
+### 41. Ana crea un proyecto para probar eventos
 # @name proyecto8
-POST http://localhost:8000/projects
+POST {{baseUrl}}/projects
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
@@ -357,23 +354,23 @@ Authorization: Bearer {{anaToken}}
 ###
 @pid8 = {{proyecto8.response.body.$.id}}
 
-### 52. Agregar a Beto (201) → consola: "Nuevo colaborador — Beto ... por Ana"
-POST http://localhost:8000/projects/{{pid8}}/members
+### 42. Agregar a Beto (201) → consola: "Nuevo colaborador — Beto ... por Ana"
+POST {{baseUrl}}/projects/{{pid8}}/members
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "email": "beto@mail.com" }
 
-### 53. Agregarlo otra vez (409) → la consola NO muestra nada
-POST http://localhost:8000/projects/{{pid8}}/members
+### 43. Agregarlo otra vez (409) → la consola NO muestra nada
+POST {{baseUrl}}/projects/{{pid8}}/members
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "email": "beto@mail.com" }
 
-### 54. Crear tarea para Beto (201) → consola: "Tarea asignada — ... por Ana"
+### 44. Crear tarea para Beto (201) → consola: "Tarea asignada — ... por Ana"
 # @name tarea8
-POST http://localhost:8000/projects/{{pid8}}/tasks
+POST {{baseUrl}}/projects/{{pid8}}/tasks
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
@@ -382,22 +379,22 @@ Authorization: Bearer {{anaToken}}
 ###
 @tid8 = {{tarea8.response.body.$.id}}
 
-### 55. Responsable que no participa (409) → la consola NO muestra nada
-POST http://localhost:8000/projects/{{pid8}}/tasks
+### 45. Responsable que no participa (409) → la consola NO muestra nada
+POST {{baseUrl}}/projects/{{pid8}}/tasks
 Content-Type: application/json
 Authorization: Bearer {{anaToken}}
 
 { "titulo": "Otra", "responsableId": 4 }
 
-### 56. Cambiar solo el estado (200) → NO se notifica
-PUT http://localhost:8000/projects/{{pid8}}/tasks/{{tid8}}
+### 46. Cambiar solo el estado (200) → NO se notifica
+PUT {{baseUrl}}/projects/{{pid8}}/tasks/{{tid8}}
 Content-Type: application/json
 Authorization: Bearer {{betoToken}}
 
 { "estado": "En proceso" }
 
-### 57. Reasignar a Ana (200) → consola: "Tarea asignada ... a Ana ... por Beto"
-PUT http://localhost:8000/projects/{{pid8}}/tasks/{{tid8}}
+### 47. Reasignar a Ana (200) → consola: "Tarea asignada ... a Ana ... por Beto"
+PUT {{baseUrl}}/projects/{{pid8}}/tasks/{{tid8}}
 Content-Type: application/json
 Authorization: Bearer {{betoToken}}
 

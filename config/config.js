@@ -16,6 +16,11 @@ if (!["console", "file", "both"].includes(NOTIFIER_TYPE)) {
 const NOTIFICATIONS_LOG_PATH =
   process.env.NOTIFICATIONS_LOG_PATH || "notifications.log"; // archivo del notificador "file"
 
+// Documentación: Swagger UI en /api-docs. Por defecto encendida, salvo con NODE_ENV=production.
+const DOCS_ENABLED =
+  (process.env.DOCS_ENABLED ??
+    (NODE_ENV === "production" ? "false" : "true")) === "true";
+
 // Variable obligatoria: si falta, la aplicación no arranca y avisa cuál es.
 function required(name) {
   const value = process.env[name];
@@ -52,4 +57,5 @@ export {
   ADMIN_EMAIL,
   ADMIN_PASSWORD,
   NOTIFICATIONS_LOG_PATH,
+  DOCS_ENABLED,
 };
