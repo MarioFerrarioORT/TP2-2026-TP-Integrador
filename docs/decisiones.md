@@ -85,3 +85,8 @@
 
 **Decisión:** no se implementan notificaciones persistentes con estado visto/no visto. Quedaron fuera del alcance por tiempo.
 **Consecuencia:** sumarlas más adelante sería un listener más sobre los mismos eventos, sin cambiar los casos de uso.
+
+## D16 — OpenAPI en un archivo YAML escrito a mano, con swagger-ui-express
+
+**Decisión:** la documentación vive en `openapi.yaml` (OpenAPI 3.1.0) y se publica en `/api-docs`, en lugar de generarla desde los esquemas de Zod o con comentarios en las rutas. `DOCS_ENABLED` permite apagarla.
+**Consecuencia:** el código de las rutas queda limpio y la documentación se edita en un solo lugar, pero hay que actualizarla a mano cuando cambia un endpoint. Se verificó contra las respuestas reales de la API (238 pedidos por modo, sin diferencias) y queda como limitación conocida que no hay un test que la compare automáticamente.

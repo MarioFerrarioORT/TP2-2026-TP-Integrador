@@ -143,7 +143,7 @@ Cada entrada resume un paso: qué se hizo, qué se aprendió y en qué commit qu
 **Commits:**
 
 - `feat: agregar proyectos con colaboradores (N a N), permisos por pertenencia y reloj inyectable` (hash: 4adf81f)
-- `docs:agregar especificación de proyectos, decisiones D9 a D11 y bitácora del paso 6` (hash: b6f5b14)
+- `docs: agregar especificación de proyectos, decisiones D9 a D11 y bitácora del paso 6` (hash: b6f5b14)
 
 ## Paso 7 — Tareas
 
@@ -162,7 +162,10 @@ Cada entrada resume un paso: qué se hizo, qué se aprendió y en qué commit qu
 - Pasar las dependencias a los casos de uso como un objeto.
 
 **Decisiones:** D12, D13.
-**Commits:** (completar hashes)
+**Commits:**
+
+- `feat: agregar tareas con responsable del proyecto y reglas de baja` (hash: ce19437)
+- `docs: agregar especificación de tareas, decisiones D12 y D13 y bitácora del paso 7` (hash: 50be84f)
 
 ## Paso 8 — Eventos y notificador
 
@@ -181,4 +184,29 @@ Cada entrada resume un paso: qué se hizo, qué se aprendió y en qué commit qu
 - Emitir el evento después de guardar: cuenta algo que ya ocurrió.
 
 **Decisiones:** D14, D15.
-**Commits:** (completar hashes)
+**Commits:**
+
+- `feat: eventos task.assigned y project.memberAdded con listener y notificador` (hash: e9a3698)
+- `docs: agregar especificación de eventos, decisiones D14 y D15 y bitácora del paso 8` (hash: 3930037)
+
+## Paso 9 — Swagger, README y cierre
+
+**Qué se hizo**
+
+- `openapi.yaml` (OpenAPI 3.1.0) con los 21 endpoints, schemas y respuestas reutilizables con `$ref`, y seguridad Bearer.
+- Swagger UI publicado en `/api-docs` (swagger-ui-express), con `DOCS_ENABLED`.
+- README con dominio, relaciones, instalación, variables, cambio de persistencia, evento y listener, limitaciones conocidas y problemas frecuentes.
+- `checklist.md` con la autoevaluación y su evidencia; `.env.example` completo; `engines` en `package.json`; `@baseUrl` en `requests.http`.
+- Pruebas finales en los dos modos.
+
+**Qué se aprendió**
+
+- OpenAPI: `paths`, `components` y `$ref`; `securitySchemes` para el token.
+- Una documentación que no se verifica se desactualiza: conviene compararla con las respuestas reales.
+- Un checklist revisa todo el proyecto, no solo lo último que se escribió.
+
+**Decisiones:** D16.
+**Commits:**
+
+- `feat: documentar la API con OpenAPI y publicarla en /api-docs` (hash: 5b7c930)
+- `docs: agregar README, checklist, especificación de la documentación, decisión D16 y bitácora del paso 9` (hash: d398871)
